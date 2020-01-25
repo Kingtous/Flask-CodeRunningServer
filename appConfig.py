@@ -1,7 +1,16 @@
 import os
+from flask_httpauth import HTTPBasicAuth
 
-class AppBaseConfig:
-    base_url = 'http://127.0.0.1:5000'
-    base_mysql_connection_url = 'mysql+pymysql://cloud:cloud@localhost:8889/cloud?charset=utf8'
-    UPLOAD_PATH = os.path.join(os.path.dirname(__file__), 'uploaded')
-    database = None
+# 全局配置
+base_url = 'http://127.0.0.1:5000'
+base_mysql_connection_url = 'mysql+pymysql://cloud:cloud@localhost:8889/cloud?charset=utf8'
+upload_path = os.path.join(os.path.dirname(__file__), 'uploaded')
+secret_key = "12345678901234567890123456789012"
+# 初始化全局变量
+auth = HTTPBasicAuth()  # 可以同时支持token和用户名密码的认证
+database = None
+login_manager = None
+SQLBase = None
+SQLEngine = None
+SQLSessionMaker = None
+SQLSession = None
