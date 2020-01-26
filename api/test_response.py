@@ -7,7 +7,7 @@
 from flask import jsonify, request
 from flask_restful import Resource, reqparse
 
-from appConfig import auth
+from app_config import auth
 
 items = ["bad", "ok", "good", "excellent"]
 

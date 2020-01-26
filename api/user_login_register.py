@@ -16,9 +16,9 @@ from flask import request, jsonify, g
 from flask_restful import Resource
 from wtforms import ValidationError
 
-import appUtils
+import app_utils
 from api.response_code import ResponseCode
-from appConfig import auth
+from app_config import auth
 
 
 class Login(Resource):
@@ -49,7 +49,21 @@ class Register(Resource):
         username = request.json.get('username', None)
         password = request.json.get('password', None)
         if username is None or password is None:
-            return jsonify(code=-1, msg="用户名密码格式错误")
+            return jsonify(code=ResponseCode.FORMAT_ERROR, msg="用户名密码格式错误")
+        try:
+            # 验证用户名
+            app_utils.AppUtils.validate_username(username)
+            from database_models import User
+            user = User()
+            user.username = username
+            token = user.generate_auth_token()
+            user.hash_password(password)
+            # 数据库
+            from app_config import SQLSession
+            app_utils.AppUtils.add_to_sql(user)
+            return jsonify(code=0, data={"username": username, "token": token})
+        except ValidationError as e:
+            return jsonify(code=-1, msg=e.args[0])
 
 
 class GetToken(Resource):
@@ -57,4 +71,4 @@ class GetToken(Resource):
     @auth.login_required
     def get(self):
         token = g.user.generate_auth_token()
-        return jsonify({'code': 0, 'token': token})
+        return jsonify({'code': ResponseCode.OK_RESPONSE, 'token': token})

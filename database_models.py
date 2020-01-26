@@ -2,12 +2,13 @@ from flask import g
 from flask_httpauth import HTTPBasicAuth
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, SignatureExpired, BadSignature
 from passlib.apps import custom_app_context as pwd_context
-from sqlalchemy import Column, Integer, LargeBinary, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.dialects.mysql import *
 
-import appConfig as Cf
-
+import app_config as Cf
 # db
+from app.code_manager import CodeStatus
+
 db = Cf.database
 auth = HTTPBasicAuth()
 
@@ -59,5 +60,7 @@ class CodeResult(db.Model):
     __tablename__ = 'CodeResult'
 
     id = Column(Integer, primary_key=True, autoincrement=True)  # 代码执行结果id
-    user_id = Column(Integer, ForeignKey('User.id'))
-    result = Column(MEDIUMBLOB)  # MediumBlob最大支持16MB文件，LongBlob最大支持4GB
+    user_id = Column(Integer, ForeignKey('User.id'), nullable=False)
+    local_path = Column(String(256), nullable=False)  # 本地路径
+    status = Column(Integer, default=CodeStatus.waiting)  # 代码执行状态
+    result = Column(MEDIUMTEXT)  # MediumBlob最大支持16MB文件，LongBlob最大支持4GB
