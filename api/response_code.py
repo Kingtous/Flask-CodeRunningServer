@@ -7,6 +7,7 @@
 
 class ResponseCode:
     # 正常返回
+    USER_ALREADY_EXIST = 1004
     OK_RESPONSE = 0
     # 不正常的返回值
     LOGIN_REQUIRED = 1000

@@ -6,6 +6,7 @@ from flask_restful import Resource, request
 from werkzeug.utils import secure_filename
 
 import appConfig as cf
+from api.response_code import ResponseCode
 from appUtils import AppUtils
 
 
@@ -18,7 +19,8 @@ class UploadFile(Resource):
             return jsonify(code=-1, msg="参数不对")
         filename = secure_filename(g.user.username + datetime.datetime.now().strftime('_%H-%M-%S-%f_') + file.filename)
         file.save(os.path.join(cf.upload_path, filename))
-        return jsonify(code=0, url=AppUtils.get_network_url(os.path.join(cf.upload_path, filename)))
+        return jsonify(code=ResponseCode.OK_RESPONSE,
+                       data={'url': AppUtils.get_network_url(os.path.join(cf.upload_path, filename))})
 
 
 class GetFile(Resource):

@@ -2,7 +2,8 @@ from flask import g
 from flask_httpauth import HTTPBasicAuth
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, SignatureExpired, BadSignature
 from passlib.apps import custom_app_context as pwd_context
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column, Integer, LargeBinary, ForeignKey
+from sqlalchemy.dialects.mysql import *
 
 import appConfig as Cf
 
@@ -52,3 +53,11 @@ class User(db.Model):
             return None  # invalid token
         user = User.query.get(data['id'])
         return user
+
+
+class CodeResult(db.Model):
+    __tablename__ = 'CodeResult'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)  # 代码执行结果id
+    user_id = Column(Integer, ForeignKey('User.id'))
+    result = Column(MEDIUMBLOB)  # MediumBlob最大支持16MB文件，LongBlob最大支持4GB
