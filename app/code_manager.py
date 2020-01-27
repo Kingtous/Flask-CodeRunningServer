@@ -5,13 +5,15 @@
 # @Date  : 2020-01-26
 # @Desc  :
 import os
+import subprocess
+import tempfile
 import time
-import tempfile, shutil, subprocess
 from threading import Semaphore, Thread
+
 # 代码运行
 import gevent
 
-from app_config import PYTHON3_EXE, running_pool, CPP_EXE, C_EXE, BASH_EXE
+from app_config import PYTHON3_EXE, running_pool, C_EXE
 
 
 class CodeBlock:
@@ -74,7 +76,7 @@ class CodeRunner:
             task_id = self.code_block.task_id
             user_id = self.code_block.user_id
             # 去数据库中查询
-            from database_models import CodeResult
+            from app.database_models import CodeResult
             result = session.query(CodeResult).filter_by(id=task_id, user_id=user_id).first()
             self.result = result
             if result is None:

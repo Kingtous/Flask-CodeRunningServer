@@ -7,7 +7,7 @@
 
 # 传入一个url，加入python处理队列，加入成功后返回0
 
-from flask import request, g, jsonify
+from flask import request, g
 from flask_restful import Resource, reqparse
 
 from api.response_code import ResponseClass, ResponseCode
@@ -23,7 +23,7 @@ class CodeRunnerSubmitAPI(Resource):
         url = request.json.get("url", None)
         url = AppUtils.get_local_path(url)
         # 先存入CodeResult
-        from database_models import CodeResult
+        from app.database_models import CodeResult
         code_result = CodeResult()
         code_result.user_id = g.user.id
         code_result.local_path = url
@@ -55,7 +55,7 @@ class CodeRunningQueryAPI(Resource):
             from app_config import SQLSession
             session = SQLSession()
             try:
-                from database_models import CodeResult
+                from app.database_models import CodeResult
                 result = session.query(CodeResult).filter_by(user_id=user_id, id=code_id).first()
                 if result is None:
                     return ResponseClass.warn(ResponseCode.FILE_NOT_EXIST)

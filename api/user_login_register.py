@@ -29,7 +29,7 @@ class Login(Resource):
         if username is None or password is None:
             return jsonify(code=ResponseCode.FORMAT_ERROR)
         # 查找用户
-        from database_models import User
+        from app.database_models import User
         user = User.query.filter_by(username=username).first()
         if user is None:
             return jsonify(code=ResponseCode.USER_NOT_EXIST)
@@ -53,7 +53,7 @@ class Register(Resource):
         try:
             # 验证用户名
             app_utils.AppUtils.validate_username(username)
-            from database_models import User
+            from app.database_models import User
             user = User()
             user.username = username
             token = user.generate_auth_token()

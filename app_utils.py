@@ -1,7 +1,8 @@
-import os, sys, shutil
+import os
+import shutil
+import sys
 
 import pyfiglet
-import pymysql
 from flask import jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
@@ -14,6 +15,7 @@ from api.response_code import ResponseCode
 from app.code_manager import CodeManager
 
 
+# 全局Utils
 class AppUtils:
 
     @staticmethod
@@ -37,7 +39,8 @@ class AppUtils:
         Cf.SQLSessionMaker = sessionmaker(bind=Cf.SQLEngine)
         Cf.SQLSession = scoped_session(Cf.SQLSessionMaker)  # scoped_session保证线程安全
         # 必须import database_models初始化数据库各类!
-        import database_models
+        import app.database_models
+        print(app.database_models)
         try:
             Cf.database.create_all()
         except Exception as e:
@@ -62,14 +65,14 @@ class AppUtils:
 
     @staticmethod
     def validate_username(username):
-        from database_models import User
+        from app.database_models import User
         user = User.query.filter_by(username=username).first()
         if user is not None:
             raise ValidationError('Please use a different username.')
 
     @staticmethod
     def validate_email(email):
-        from database_models import User
+        from app.database_models import User
         user = User.query.filter_by(email=email).first()
         if user is not None:
             raise ValidationError('Please use a different email address.')
