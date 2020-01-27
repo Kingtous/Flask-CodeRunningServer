@@ -33,7 +33,7 @@ class Login(Resource):
         user = User.query.filter_by(username=username).first()
         if user is None:
             return jsonify(code=ResponseCode.USER_NOT_EXIST)
-        if not user.verify_password(password):
+        if not user.verify_password_only(password):
             return jsonify(code=ResponseCode.PASSWORD_ERROR)
         # 用户验证成功
         token = user.generate_auth_token()
