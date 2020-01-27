@@ -7,8 +7,8 @@
 
 # 传入一个url，加入python处理队列，加入成功后返回0
 
-from flask import request, g
-from flask_restful import Resource
+from flask import request, g, jsonify
+from flask_restful import Resource, reqparse
 
 from api.response_code import ResponseClass, ResponseCode
 from app.code_manager import CodeBlock
@@ -16,10 +16,10 @@ from app_config import auth
 from app_utils import AppUtils
 
 
-class CodeRunnerAPI(Resource):
+class CodeRunnerSubmitAPI(Resource):
 
     @auth.login_required
-    def get(self):
+    def post(self):
         url = request.json.get("url", None)
         url = AppUtils.get_local_path(url)
         # 先存入CodeResult
@@ -33,6 +33,35 @@ class CodeRunnerAPI(Resource):
         session.close()
         return_value = code_manager.add_task(block)
         if return_value:
-            return ResponseClass.ok()
+            return ResponseClass.ok_with_data({"code_id": code_result.id})
         else:
             return ResponseClass.warn(ResponseCode.SUBMIT_ERROR)
+
+
+class CodeRunningQueryAPI(Resource):
+    parser = reqparse.RequestParser()
+
+    def __init__(self):
+        self.parser.add_argument('code_id', type=int)
+
+    @auth.login_required
+    def get(self):
+        user_id = g.user.id
+        args = self.parser.parse_args()
+        code_id = args.get('code_id', None)
+        if code_id is None:
+            return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
+        else:
+            from app_config import SQLSession
+            session = SQLSession()
+            try:
+                from database_models import CodeResult
+                result = session.query(CodeResult).filter_by(user_id=user_id, id=code_id).first()
+                if result is None:
+                    return ResponseClass.warn(ResponseCode.FILE_NOT_EXIST)
+                return ResponseClass.ok_with_data({"status": result.status, "result": result.result})
+            except Exception as e:
+                print(e)
+                return ResponseClass.warn(ResponseCode.SERVER_ERROR)
+            finally:
+                session.close()

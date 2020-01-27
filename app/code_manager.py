@@ -6,12 +6,12 @@
 # @Desc  :
 import os
 import time
+import tempfile, shutil, subprocess
 from threading import Semaphore, Thread
-
 # 代码运行
 import gevent
 
-from app_config import PYTHON3_EXE, running_pool
+from app_config import PYTHON3_EXE, running_pool, CPP_EXE, C_EXE, BASH_EXE
 
 
 class CodeBlock:
@@ -32,7 +32,8 @@ class CodeStatus:
     error_file_not_exists = 5
     error_runtime_error = 6
     error_file_not_supported = 7
-    errors = [error, error_file_not_exists, error_runtime_error, error_file_not_supported]
+    error_compile_error = 8
+    errors = [error, error_file_not_exists, error_runtime_error, error_file_not_supported, error_compile_error]
 
 
 # 执行代码的协程，自动提交更改到数据库，并且可以通过getData得到result值
@@ -43,11 +44,14 @@ class CodeRunner:
         self.status = CodeStatus.waiting
         self.result = None
         self.is_got = False
+        self.session = None
 
     def change_state(self, state):
         self.status = state
         if self.result is not None:
             self.result.status = state
+            if self.session is not None:
+                self.session.commit()
 
     def get_data(self):
         self.is_got = True
@@ -56,9 +60,16 @@ class CodeRunner:
     def is_valid(self):
         return not self.is_got
 
+    @staticmethod
+    def run_command(command_list):
+        return subprocess.Popen(command_list,
+                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                shell=False).communicate()
+
     def run(self):
         from app_config import SQLSession
         session = SQLSession()
+        self.session = session
         try:
             task_id = self.code_block.task_id
             user_id = self.code_block.user_id
@@ -74,16 +85,56 @@ class CodeRunner:
             path = result.local_path
             # 判断后缀，执行不同语言的代码
             suffix = os.path.splitext(path)[1].lower()
+            self.change_state(CodeStatus.running)
             if suffix == '.py':
                 # 开始运行Python脚本
-                self.change_state(CodeStatus.running)
-                f = os.popen(PYTHON3_EXE + path)
-                self.result.result = f.read()
-                # 更新数据库
-                self.change_state(CodeStatus.completed)
-                print("CodeRunner: Execute %s Success." % path)
+                p = subprocess.Popen([PYTHON3_EXE, path], stdout=subprocess.PIPE)
+                p.wait()
+                self.result.result = p.stdout.read()
+            elif suffix == '.c':
+                # C 语言
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    t_path = os.path.join(temp_dir, 'c.c')
+                    from app_utils import AppUtils
+                    t_path = AppUtils.copy_file(path, t_path)
+                    self.change_state(CodeStatus.compiling)
+                    p = subprocess.Popen([C_EXE, t_path, '-o', os.path.join(temp_dir, 'c.out')],
+                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                         shell=False)
+                    out, err = p.communicate()
+                    exe_path = os.path.join(temp_dir, 'c.out')
+                    if not os.path.exists(exe_path):
+                        self.change_state(CodeStatus.error_compile_error)
+                        self.result.result = err
+                    else:
+                        exe_out, exe_err = self.run_command([exe_path])
+                        self.change_state(CodeStatus.completed)
+                        self.result.result = exe_out
+            elif suffix == '.cpp':
+                # C 语言
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    t_path = os.path.join(temp_dir, 'cpp.cpp')
+                    from app_utils import AppUtils
+                    t_path = AppUtils.copy_file(path, t_path)
+                    self.change_state(CodeStatus.compiling)
+                    p = subprocess.Popen([C_EXE, t_path, '-o', os.path.join(temp_dir, 'cpp.out')],
+                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                         shell=False)
+                    out, err = p.communicate()
+                    exe_path = os.path.join(temp_dir, 'cpp.out')
+                    if not os.path.exists(exe_path):
+                        self.change_state(CodeStatus.error_compile_error)
+                        self.result.result = err
+                    else:
+                        exe_out, exe_err = self.run_command([exe_path])
+                        self.change_state(CodeStatus.completed)
+                        self.result.result = exe_out
             else:
                 self.change_state(CodeStatus.error_file_not_supported)
+            # 更新数据库
+            self.change_state(CodeStatus.completed)
+            print("CodeRunner: Execute %s Over." % path)
+            print("Output:\n %s" % self.result.result)
             from app_utils import AppUtils
             AppUtils.update_sql(session)
         except Exception as e:

@@ -63,4 +63,4 @@ class CodeResult(db.Model):
     user_id = Column(Integer, ForeignKey('User.id'), nullable=False)
     local_path = Column(String(256), nullable=False)  # 本地路径
     status = Column(Integer, default=CodeStatus.waiting)  # 代码执行状态
-    result = Column(MEDIUMTEXT)  # MediumBlob最大支持16MB文件，LongBlob最大支持4GB
+    result = Column(MEDIUMTEXT, default="")  # MediumBlob最大支持16MB文件，LongBlob最大支持4GB

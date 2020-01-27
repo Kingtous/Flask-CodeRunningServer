@@ -9,14 +9,16 @@ from flask import jsonify
 
 class ResponseCode:
     # 正常返回
-    USER_ALREADY_EXIST = 1004
-    OK_RESPONSE = 0
+    USER_ALREADY_EXIST = 1004  # 用户名不可用
+    OK_RESPONSE = 0  # 正常返回
     # 不正常的返回值
-    LOGIN_REQUIRED = 1000
-    USER_NOT_EXIST = 1001
-    FORMAT_ERROR = 1002
-    PASSWORD_ERROR = 1003
-    SUBMIT_ERROR = 1004
+    LOGIN_REQUIRED = 1000  # 需要登录/token过期
+    USER_NOT_EXIST = 1001  # 用户名不存在
+    FORMAT_ERROR = 1002  # 格式错误
+    PASSWORD_ERROR = 1003  # 密码错误
+    SUBMIT_ERROR = 1004  # 提交错误
+    FILE_NOT_EXIST = 1005  # 文件不存在
+    SERVER_ERROR = 1006  # 服务器故障
 
 
 class ResponseClass:

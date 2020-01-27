@@ -1,6 +1,7 @@
-import os, sys
+import os, sys, shutil
 
 import pyfiglet
+import pymysql
 from flask import jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
@@ -37,7 +38,11 @@ class AppUtils:
         Cf.SQLSession = scoped_session(Cf.SQLSessionMaker)  # scoped_session保证线程安全
         # 必须import database_models初始化数据库各类!
         import database_models
-        Cf.database.create_all()
+        try:
+            Cf.database.create_all()
+        except Exception as e:
+            sys.stderr.write('Database Connect Error: %s\n' % e.args[0])
+            exit(0)
 
         # 未登录回调
         @Cf.auth.error_handler
@@ -83,3 +88,11 @@ class AppUtils:
     @staticmethod
     def close_sql(session):
         session.close()
+
+    @staticmethod
+    def copy_file(src, dst):
+        try:
+            shutil.copyfile(src, dst)
+            return dst
+        except IOError:
+            return None
