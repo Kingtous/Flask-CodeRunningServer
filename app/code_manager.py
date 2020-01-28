@@ -131,6 +131,25 @@ class CodeRunner:
                         exe_out, exe_err = self.run_command([exe_path])
                         self.change_state(CodeStatus.completed)
                         self.result.result = exe_out
+            elif suffix == '.java':
+                # Java 语言
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    t_path = os.path.join(temp_dir, 'java.java')
+                    from app_utils import AppUtils
+                    t_path = AppUtils.copy_file(path, t_path)
+                    self.change_state(CodeStatus.compiling)
+                    p = subprocess.Popen([C_EXE, t_path, '-d', temp_dir],
+                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                         shell=False)
+                    out, err = p.communicate()
+                    exe_path = os.path.join(temp_dir, 'cpp.out')
+                    if not os.path.exists(exe_path):
+                        self.change_state(CodeStatus.error_compile_error)
+                        self.result.result = err
+                    else:
+                        exe_out, exe_err = self.run_command([exe_path])
+                        self.change_state(CodeStatus.completed)
+                        self.result.result = exe_out
             else:
                 self.change_state(CodeStatus.error_file_not_supported)
             # 更新数据库

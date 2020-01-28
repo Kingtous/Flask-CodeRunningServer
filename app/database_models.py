@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import g
 from flask_httpauth import HTTPBasicAuth
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, SignatureExpired, BadSignature
@@ -13,6 +15,7 @@ db = Cf.database
 auth = HTTPBasicAuth()
 
 
+# 用户表
 class User(db.Model):
     __tablename__ = 'User'
 
@@ -56,11 +59,69 @@ class User(db.Model):
         return user
 
 
+# 积分表
+class Points(db.Model):
+    __tablename__ = 'Points'
+    user_id = Column(Integer, ForeignKey('User.id', ondelete="CASCADE"), primary_key=True)  # 用户ID
+    points = Column(Integer)  # 积分数
+
+
+# 代码保存
+class Code(db.Model):
+    __tablename__ = 'Code'
+    id = Column(Integer, primary_key=True, autoincrement=True)  # 代码的ID
+    user_id = Column(Integer, ForeignKey('User.id', ondelete="CASCADE"), nullable=False)
+    local_path = Column(String(256), nullable=False)  # 本地路径
+    create_date = Column(DATETIME, default=datetime.now)
+
+    # 转换为下载地址
+    def getDownloadUrl(self):
+        from app_utils import AppUtils
+        return AppUtils.get_network_url(self.local_path)
+
+
+# 代码执行结果
 class CodeResult(db.Model):
     __tablename__ = 'CodeResult'
 
     id = Column(Integer, primary_key=True, autoincrement=True)  # 代码执行结果id
-    user_id = Column(Integer, ForeignKey('User.id'), nullable=False)
-    local_path = Column(String(256), nullable=False)  # 本地路径
+    user_id = Column(Integer, ForeignKey('User.id', ondelete="CASCADE"), nullable=False)
+    code_id = Column(Integer, ForeignKey('Code.id', ondelete="CASCADE"), nullable=False)  # 本地路径
     status = Column(Integer, default=CodeStatus.waiting)  # 代码执行状态
     result = Column(MEDIUMTEXT, default="")  # MediumBlob最大支持16MB文件，LongBlob最大支持4GB
+
+
+# 帖子表
+class Threads(db.Model):
+    __tablename__ = 'Threads'
+    id = Column(Integer, primary_key=True, autoincrement=True)  # 帖子ID
+    user_id = Column(Integer, ForeignKey('User.id'), nullable=False)  # 发帖人的ID
+    code_id = Column(Integer, ForeignKey('Code.id'), nullable=True)  # 代码ID
+    title = Column(TINYTEXT)  # 帖子标题
+    subtitle = Column(TEXT)  # 副标题，可能作为正文内容
+
+
+# 评论表
+class Comments(db.Model):
+    __tablename__ = 'Comments'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)  # 评论ID
+    user_id = Column(Integer, ForeignKey('User.id'), nullable=False)
+    code_id = Column(Integer, ForeignKey('Threads.id'), nullable=False)  # 代码ID
+    threads_id = Column(Integer, ForeignKey('Code.id'), nullable=True)  # 代码ID
+    content = Column(TEXT)  # 评论内容
+    parent_id = Column(Integer, ForeignKey('Comments.id'))
+    next_id = Column(Integer, ForeignKey('Comments.id'))
+    # datetime.now指的是插入数据的当前时间，datetime.now()指的是建表时间
+    create_date = Column(DATETIME, default=datetime.now)
+
+
+# 代码分享表
+class CodeSharing(db.Model):
+    __tablename__ = 'CodeSharing'
+    id = Column(Integer, primary_key=True, autoincrement=True)  # 分享的ID
+    user_id = Column(Integer, ForeignKey('User.id'), nullable=False)  # 分享人
+    code_id = Column(Integer, ForeignKey('Code.id', ondelete="CASCADE"), nullable=False)  # 本地路径
+    like_nums = Column(Integer, default=0)  # 喜欢数
+    dislike_nums = Column(Integer, default=0)  # 不喜欢数
+    is_private = Column(BOOLEAN, default=True)  # 是否为私有
