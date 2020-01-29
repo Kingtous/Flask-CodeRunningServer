@@ -9,9 +9,9 @@ from app_utils import AppUtils
 
 if __name__ == '__main__':
     # 猴子补丁
-    from gevent import monkey
-
-    monkey.patch_all()
+    # from gevent import monkey
+    #
+    # monkey.patch_all()
 
     ### 配置
     app = Flask(__name__)

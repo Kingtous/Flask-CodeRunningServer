@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import re
 
 import pyfiglet
 from flask import jsonify
@@ -78,6 +79,10 @@ class AppUtils:
             raise ValidationError('Please use a different email address.')
 
     @staticmethod
+    def get_session():
+        return Cf.SQLSession()
+
+    @staticmethod
     def add_to_sql(data):
         session = Cf.SQLSession()
         session.add(data)
@@ -99,3 +104,18 @@ class AppUtils:
             return dst
         except IOError:
             return None
+
+    @staticmethod
+    def get_java_class_name(path):
+        if not os.path.exists(path):
+            return None
+        with open(path, 'r') as f:
+            try:
+                file_name = re.search('^[\s]*public class [a-z|A-z]*', f.read()).group()
+                if file_name is None:
+                    return None
+                class_name = re.split('\s+', file_name)[-1]
+                return class_name
+            except Exception as e:
+                print(e)
+                return None

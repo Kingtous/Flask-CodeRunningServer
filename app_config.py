@@ -7,6 +7,8 @@ from gevent import pool
 PYTHON3_EXE = '/usr/bin/python3'
 CPP_EXE = '/usr/bin/g++'
 C_EXE = '/usr/bin/gcc'
+JAVA_EXE = '/usr/bin/java'
+JAVA_COMPILER_EXE = '/usr/bin/javac'
 BASH_EXE = '/bin/bash'
 # 全局配置
 base_url = 'http://127.0.0.1:5000'

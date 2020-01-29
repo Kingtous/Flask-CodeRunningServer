@@ -71,6 +71,7 @@ class Code(db.Model):
     __tablename__ = 'Code'
     id = Column(Integer, primary_key=True, autoincrement=True)  # 代码的ID
     user_id = Column(Integer, ForeignKey('User.id', ondelete="CASCADE"), nullable=False)
+    code_type = Column(Integer, nullable=True)
     local_path = Column(String(256), nullable=False)  # 本地路径
     create_date = Column(DATETIME, default=datetime.now)
 

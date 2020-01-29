@@ -22,11 +22,18 @@ class CodeRunnerSubmitAPI(Resource):
     def post(self):
         url = request.json.get("url", None)
         url = AppUtils.get_local_path(url)
+
+        session = AppUtils.get_session()
+        from app.database_models import Code
+        code = session.query(Code).filter_by(local_path=url).first()
+        if code is None:
+            return ResponseClass.warn(ResponseCode.FILE_NOT_EXIST)
+        session.close()
         # 先存入CodeResult
         from app.database_models import CodeResult
         code_result = CodeResult()
+        code_result.code_id = code.id
         code_result.user_id = g.user.id
-        code_result.local_path = url
         from app_config import code_manager
         session = AppUtils.add_to_sql(code_result)
         block = CodeBlock(user_id=code_result.user_id, task_id=code_result.id)

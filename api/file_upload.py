@@ -26,6 +26,20 @@ class UploadFile(Resource):
         code = Code()
         code.user_id = g.user.id
         code.local_path = local_path
+        # 根据后缀判断语言
+        suffix = os.path.splitext(filename)[-1]
+        from app.code_manager import CodeType
+        if suffix == '.py':
+            code.code_type = CodeType.PYTHON3
+        elif suffix == '.c':
+            code.code_type = CodeType.C
+        elif suffix == '.cpp':
+            code.code_type = CodeType.CPP
+        elif suffix == '.java':
+            code.code_type = CodeType.JAVA
+        else:
+            code.code_type = CodeType.FILE
+
         AppUtils.add_to_sql(code)
         return jsonify(code=ResponseCode.OK_RESPONSE,
                        data={'url': AppUtils.get_network_url(os.path.join(Cf.upload_path, filename))})

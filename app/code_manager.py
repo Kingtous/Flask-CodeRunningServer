@@ -13,7 +13,7 @@ from threading import Semaphore, Thread
 # 代码运行
 import gevent
 
-from app_config import PYTHON3_EXE, running_pool, C_EXE
+from app_config import PYTHON3_EXE, running_pool, C_EXE, JAVA_EXE, JAVA_COMPILER_EXE, CPP_EXE
 
 
 class CodeBlock:
@@ -36,6 +36,14 @@ class CodeStatus:
     error_file_not_supported = 7
     error_compile_error = 8
     errors = [error, error_file_not_exists, error_runtime_error, error_file_not_supported, error_compile_error]
+
+
+class CodeType:
+    C = 0
+    CPP = 1
+    JAVA = 2
+    PYTHON3 = 3
+    FILE = 4
 
 
 # 执行代码的协程，自动提交更改到数据库，并且可以通过getData得到result值
@@ -63,10 +71,18 @@ class CodeRunner:
         return not self.is_got
 
     @staticmethod
-    def run_command(command_list):
-        return subprocess.Popen(command_list,
-                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                shell=False).communicate()
+    def run_command(command_list, time_limit=30, working_directory='.'):
+        try:
+            out, err = subprocess.Popen(command_list,
+                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                        shell=False, cwd=working_directory).communicate(timeout=time_limit)
+            if type(out) == bytes:
+                out = out.decode()
+            if type(err) == bytes:
+                err = err.decode()
+            return out, err
+        except subprocess.TimeoutExpired as e:
+            return '', 'Running Time > ' + str(time_limit) + 's'
 
     def run(self):
         from app_config import SQLSession
@@ -77,22 +93,29 @@ class CodeRunner:
             user_id = self.code_block.user_id
             # 去数据库中查询
             from app.database_models import CodeResult
-            result = session.query(CodeResult).filter_by(id=task_id, user_id=user_id).first()
-            self.result = result
+            from app.database_models import Code
+            result = session.query(CodeResult, Code.id, Code.local_path).filter_by(id=task_id,
+                                                                                   user_id=user_id,
+                                                                                   code_id=Code.id).first()
             if result is None:
                 # 数据库中没有
                 self.change_state(CodeStatus.error_file_not_exists)
                 return False
             # result为CodeResult
-            path = result.local_path
+            self.result = result[0]
+            path = result[2]
             # 判断后缀，执行不同语言的代码
             suffix = os.path.splitext(path)[1].lower()
             self.change_state(CodeStatus.running)
             if suffix == '.py':
                 # 开始运行Python脚本
-                p = subprocess.Popen([PYTHON3_EXE, path], stdout=subprocess.PIPE)
-                p.wait()
-                self.result.result = p.stdout.read()
+                out, err = self.run_command([PYTHON3_EXE, path])
+                if len(err) == 0:
+                    self.result.result = out
+                    self.change_state(CodeStatus.completed)
+                else:
+                    self.result.result = err
+                    self.change_state(CodeStatus.error_runtime_error)
             elif suffix == '.c':
                 # C 语言
                 with tempfile.TemporaryDirectory() as temp_dir:
@@ -100,18 +123,19 @@ class CodeRunner:
                     from app_utils import AppUtils
                     t_path = AppUtils.copy_file(path, t_path)
                     self.change_state(CodeStatus.compiling)
-                    p = subprocess.Popen([C_EXE, t_path, '-o', os.path.join(temp_dir, 'c.out')],
-                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                         shell=False)
-                    out, err = p.communicate()
+                    out, err = self.run_command([C_EXE, t_path, '-o', os.path.join(temp_dir, 'c.out')])
                     exe_path = os.path.join(temp_dir, 'c.out')
                     if not os.path.exists(exe_path):
                         self.change_state(CodeStatus.error_compile_error)
                         self.result.result = err
                     else:
                         exe_out, exe_err = self.run_command([exe_path])
-                        self.change_state(CodeStatus.completed)
-                        self.result.result = exe_out
+                        if len(exe_err) == 0:
+                            self.change_state(CodeStatus.completed)
+                            self.result.result = exe_out
+                        else:
+                            self.change_state(CodeStatus.error_runtime_error)
+                            self.result.result = exe_err
             elif suffix == '.cpp':
                 # C 语言
                 with tempfile.TemporaryDirectory() as temp_dir:
@@ -119,41 +143,44 @@ class CodeRunner:
                     from app_utils import AppUtils
                     t_path = AppUtils.copy_file(path, t_path)
                     self.change_state(CodeStatus.compiling)
-                    p = subprocess.Popen([C_EXE, t_path, '-o', os.path.join(temp_dir, 'cpp.out')],
-                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                         shell=False)
-                    out, err = p.communicate()
+                    out, err = self.run_command([CPP_EXE, t_path, '-o', os.path.join(temp_dir, 'cpp.out')])
                     exe_path = os.path.join(temp_dir, 'cpp.out')
                     if not os.path.exists(exe_path):
                         self.change_state(CodeStatus.error_compile_error)
                         self.result.result = err
                     else:
                         exe_out, exe_err = self.run_command([exe_path])
-                        self.change_state(CodeStatus.completed)
-                        self.result.result = exe_out
+                        if len(exe_err) == 0:
+                            self.change_state(CodeStatus.completed)
+                            self.result.result = exe_out
+                        else:
+                            self.change_state(CodeStatus.error_runtime_error)
+                            self.result.result = exe_err
             elif suffix == '.java':
                 # Java 语言
                 with tempfile.TemporaryDirectory() as temp_dir:
-                    t_path = os.path.join(temp_dir, 'java.java')
+                    from app_utils import AppUtils
+                    java_class_name = AppUtils.get_java_class_name(path)
+                    t_path = os.path.join(temp_dir, java_class_name + '.java')
                     from app_utils import AppUtils
                     t_path = AppUtils.copy_file(path, t_path)
                     self.change_state(CodeStatus.compiling)
-                    p = subprocess.Popen([C_EXE, t_path, '-d', temp_dir],
-                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                         shell=False)
-                    out, err = p.communicate()
-                    exe_path = os.path.join(temp_dir, 'cpp.out')
+                    out, err = self.run_command([JAVA_COMPILER_EXE, t_path, '-d', temp_dir])
+                    exe_path = os.path.join(temp_dir, java_class_name + '.class')
                     if not os.path.exists(exe_path):
                         self.change_state(CodeStatus.error_compile_error)
                         self.result.result = err
                     else:
-                        exe_out, exe_err = self.run_command([exe_path])
-                        self.change_state(CodeStatus.completed)
-                        self.result.result = exe_out
+                        exe_out, exe_err = self.run_command([JAVA_EXE, java_class_name], working_directory=temp_dir)
+                        if len(exe_err) == 0:
+                            self.change_state(CodeStatus.completed)
+                            self.result.result = exe_out
+                        else:
+                            self.change_state(CodeStatus.error_runtime_error)
+                            self.result.result = exe_err
             else:
                 self.change_state(CodeStatus.error_file_not_supported)
             # 更新数据库
-            self.change_state(CodeStatus.completed)
             print("CodeRunner: Execute %s Over." % path)
             print("Output:\n %s" % self.result.result)
             from app_utils import AppUtils

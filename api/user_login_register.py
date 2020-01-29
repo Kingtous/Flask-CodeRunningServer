@@ -56,11 +56,11 @@ class Register(Resource):
             from app.database_models import User
             user = User()
             user.username = username
-            token = user.generate_auth_token()
             user.hash_password(password)
             # 数据库
             from app_config import SQLSession
             app_utils.AppUtils.add_to_sql(user)
+            token = user.generate_auth_token()
             return jsonify(code=0, data={"username": username, "token": token})
         except ValidationError as e:
             return jsonify(code=-1, msg=e.args[0])
