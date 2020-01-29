@@ -3,10 +3,11 @@ import os
 
 from flask import jsonify, send_from_directory, g, request
 from flask_restful import Resource
+from sqlalchemy import and_
 from werkzeug.utils import secure_filename
 
 import app_config as Cf
-from api.response_code import ResponseCode
+from api.response_code import ResponseCode, ResponseClass
 from app_utils import AppUtils
 
 
@@ -50,3 +51,14 @@ class GetFile(Resource):
     @Cf.auth.login_required
     def get(self, file_name):
         return send_from_directory(Cf.upload_path, file_name)
+
+
+class GetCodeList(Resource):
+    @Cf.auth.login_required
+    def get(self):
+        session = AppUtils.get_session()
+        from app.database_models import Code
+        from app.code_manager import CodeType
+        result = session.query(Code).filter(and_(Code.user_id == g.user.id, Code.code_type != CodeType.FILE)).all()
+        result = [item.get_public_dict() for item in result]
+        return ResponseClass.ok_with_data(result)

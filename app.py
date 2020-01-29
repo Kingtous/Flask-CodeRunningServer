@@ -2,7 +2,7 @@ from flask import Flask
 from flask_restful import Api
 
 from api.code_runner import CodeRunnerSubmitAPI, CodeRunningQueryAPI
-from api.file_upload import UploadFile, GetFile
+from api.file_upload import UploadFile, GetFile, GetCodeList
 from api.test_response import TestResponse
 from api.user_login_register import Login, Register, GetToken
 from app_utils import AppUtils
@@ -28,6 +28,7 @@ if __name__ == '__main__':
     # 2: 上传文件
     api.add_resource(UploadFile, '/file/upload')
     api.add_resource(GetFile, '/uploaded/<file_name>')
+    api.add_resource(GetCodeList, '/file/getAllCode')
 
     # 3: 获取结果
     api.add_resource(TestResponse, '/test')

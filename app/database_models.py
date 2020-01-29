@@ -76,9 +76,17 @@ class Code(db.Model):
     create_date = Column(DATETIME, default=datetime.now)
 
     # 转换为下载地址
-    def getDownloadUrl(self):
+    def get_download_url(self):
         from app_utils import AppUtils
         return AppUtils.get_network_url(self.local_path)
+
+    def get_public_dict(self):
+        d = dict()
+        d['id'] = self.id
+        d['code_type'] = self.code_type
+        d['local_path'] = self.get_download_url()
+        d['create_date'] = self.create_date.timestamp()
+        return d
 
 
 # 代码执行结果

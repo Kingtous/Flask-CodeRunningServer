@@ -111,7 +111,7 @@ class AppUtils:
             return None
         with open(path, 'r') as f:
             try:
-                file_name = re.search('^[\s]*public class [a-z|A-z]*', f.read()).group()
+                file_name = re.search('^[\s]*public[\s]+class[\s]+[a-z|A-z]+', f.read()).group()
                 if file_name is None:
                     return None
                 class_name = re.split('\s+', file_name)[-1]
