@@ -83,6 +83,13 @@ class AppUtils:
         return Cf.SQLSession()
 
     @staticmethod
+    def delete_to_sql(data):
+        session = Cf.SQLSession()
+        session.delete(data)
+        session.commit()
+        return session
+
+    @staticmethod
     def add_to_sql(data):
         session = Cf.SQLSession()
         session.add(data)

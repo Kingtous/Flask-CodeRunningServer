@@ -4,6 +4,7 @@ from flask_restful import Api
 from api.code_runner import CodeRunnerSubmitAPI, CodeRunningQueryAPI
 from api.file_upload import UploadFile, GetFile, GetCodeList
 from api.test_response import TestResponse
+from api.threads_handler import ThreadsHandler, DeleteThread, GetUserThread
 from api.user_login_register import Login, Register, GetToken
 from app_utils import AppUtils
 
@@ -35,6 +36,10 @@ if __name__ == '__main__':
     api.add_resource(CodeRunnerSubmitAPI, '/code/run')
     api.add_resource(CodeRunningQueryAPI, '/code/getResult')
 
+    # 4. 帖子
+    api.add_resource(ThreadsHandler, '/threads/push_show')
+    api.add_resource(DeleteThread, '/threads/delete')
+    api.add_resource(GetUserThread, '/threads/me')
     # from werkzeug.debug import DebuggedApplication
 
     # dapp = DebuggedApplication(app, evalex=True)

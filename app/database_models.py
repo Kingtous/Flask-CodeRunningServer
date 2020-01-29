@@ -109,6 +109,29 @@ class Threads(db.Model):
     title = Column(TINYTEXT)  # 帖子标题
     subtitle = Column(TEXT)  # 副标题，可能作为正文内容
 
+    @staticmethod
+    def verify_title(title):
+        if title is None or type(title) != str or title.strip() == '':
+            return False
+        return True
+
+    def get_public_dict(self):
+        d = dict()
+        d['id'] = self.id
+        d['title'] = self.title
+        d['subtitle'] = self.subtitle
+        from app_utils import AppUtils
+        session = AppUtils.get_session()
+        code = session.query(Code).filter_by(id=self.code_id).first()
+        if code is not None:
+            d['code_url'] = code.get_download_url()
+        else:
+            d['code_url'] = ''
+        d['user_id'] = self.user_id
+        d['username'] = session.query(User).filter_by(id=self.user_id).first().username
+        session.close()
+        return d
+
 
 # 评论表
 class Comments(db.Model):
@@ -116,8 +139,8 @@ class Comments(db.Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True)  # 评论ID
     user_id = Column(Integer, ForeignKey('User.id'), nullable=False)
-    code_id = Column(Integer, ForeignKey('Threads.id'), nullable=False)  # 代码ID
-    threads_id = Column(Integer, ForeignKey('Code.id'), nullable=True)  # 代码ID
+    code_id = Column(Integer, ForeignKey('Threads.id'), nullable=True)  # 代码ID
+    threads_id = Column(Integer, ForeignKey('Code.id'), nullable=False)  # 帖子ID
     content = Column(TEXT)  # 评论内容
     parent_id = Column(Integer, ForeignKey('Comments.id'))
     next_id = Column(Integer, ForeignKey('Comments.id'))

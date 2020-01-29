@@ -9,6 +9,7 @@ from flask import jsonify
 
 class ResponseCode:
     # 正常返回
+    THREAD_NOT_EXIST = 1007  # 帖子不存在
     USER_ALREADY_EXIST = 1004  # 用户名不可用
     OK_RESPONSE = 0  # 正常返回
     # 不正常的返回值
