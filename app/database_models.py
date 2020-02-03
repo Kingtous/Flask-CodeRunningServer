@@ -4,12 +4,16 @@ from flask import g
 from flask_httpauth import HTTPBasicAuth
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, SignatureExpired, BadSignature
 from passlib.apps import custom_app_context as pwd_context
+from pymysql import NULL
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.dialects.mysql import *
+from sqlalchemy.orm import relationship, backref
 
 import app_config as Cf
 # db
+from api.response_code import ResponseClass, ResponseCode
 from app.code_manager import CodeStatus
+from app_utils import AppUtils
 
 db = Cf.database
 auth = HTTPBasicAuth()
@@ -22,6 +26,7 @@ class User(db.Model):
     id = Column(Integer, primary_key=True)
     username = db.Column(db.String(32), index=True)
     password_hash = db.Column(db.String(128))
+    credits = Column(Integer, default=0)  # 积分
 
     def hash_password(self, password):
         self.password_hash = pwd_context.encrypt(password)
@@ -106,6 +111,7 @@ class Threads(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)  # 帖子ID
     user_id = Column(Integer, ForeignKey('User.id'), nullable=False)  # 发帖人的ID
     code_id = Column(Integer, ForeignKey('Code.id'), nullable=True)  # 代码ID
+    comment_id = Column(Integer, ForeignKey('Comments.id'), nullable=True)  # 发帖id
     title = Column(TINYTEXT)  # 帖子标题
     subtitle = Column(TEXT)  # 副标题，可能作为正文内容
 
@@ -115,11 +121,82 @@ class Threads(db.Model):
             return False
         return True
 
+    def del_comment(self, comment_id):
+        try:
+            session = AppUtils.get_session()
+            comment = session.query(Comments).filter_by(id=comment_id).first()
+            if comment_id == self.comment_id:
+                # 对首
+                self.comment_id = comment.next_id
+                session.delete(comment)
+                session.commit()
+            elif comment.next_id is None:
+                # 队尾
+                session.delete(comment)
+            else:
+                # 对中
+                pre_comment = session.query(Comments).filter_by(id=comment.parent_id).first()
+                next_comment = session.query(Comments).filter_by(id=comment.next_id).first()
+                pre_comment.next_id = next_comment.id
+                next_comment.parent_id = pre_comment.id
+                session.delete(comment)
+                session.commit()
+            return True
+        except Exception as e:
+            print(e)
+            return False
+
+    def submit_comment(self, comment):
+        try:
+            if self.comment_id is None:
+                # 对首
+                comment.threads_id = self.id
+                session = AppUtils.add_to_sql(comment)
+                self.comment_id = comment.id
+                session.commit()
+                session.close()
+            else:
+                session = AppUtils.get_session()
+                # 不是队列首部
+                last_comment = session.query(Comments).filter_by(threads_id=self.id, next_id=None).first()
+                comment.parent_id = last_comment.id
+                t_session = AppUtils.add_to_sql(comment)
+                last_comment.next_id = comment.id
+                t_session.commit()
+                session.commit()
+                t_session.close()
+                session.close()
+            return True
+        except Exception as e:
+            print(e)
+            return False
+
+    # comment_id = -1表示从头开始获取,若不为-1的话，则表示从comment_id开始，数10条
+    def get_comments(self, comment_id=-1):
+        try:
+            if comment_id == -1:
+                comment_id = self.comment_id
+            session = AppUtils.get_session()
+            comment = session.query(Comments).filter_by(id=comment_id).first()
+            if comment is None:
+                return ResponseClass.warn(ResponseCode.COMMENT_NOT_FOUND)
+            # 向后获取十条评论
+            comments = [comment.get_public_dict()]
+            cnt = 1
+            while cnt < 10 and comment.next_id is not None:
+                n_comment = session.query(Comments).filter_by(id=comment.next_id).first()
+                comments.append(n_comment.get_public_dict())
+            return comments
+        except Exception as e:
+            print(e)
+            return None
+
     def get_public_dict(self):
         d = dict()
         d['id'] = self.id
         d['title'] = self.title
         d['subtitle'] = self.subtitle
+        d['comment_id'] = self.comment_id
         from app_utils import AppUtils
         session = AppUtils.get_session()
         code = session.query(Code).filter_by(id=self.code_id).first()
@@ -139,13 +216,36 @@ class Comments(db.Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True)  # 评论ID
     user_id = Column(Integer, ForeignKey('User.id'), nullable=False)
-    code_id = Column(Integer, ForeignKey('Threads.id'), nullable=True)  # 代码ID
-    threads_id = Column(Integer, ForeignKey('Code.id'), nullable=False)  # 帖子ID
+    code_id = Column(Integer, ForeignKey('Code.id'), nullable=True)  # 代码ID
+    threads_id = Column(Integer, ForeignKey('Threads.id'), nullable=False)  # 帖子ID
     content = Column(TEXT)  # 评论内容
-    parent_id = Column(Integer, ForeignKey('Comments.id'))
-    next_id = Column(Integer, ForeignKey('Comments.id'))
+    parent_id = Column(Integer, ForeignKey('Comments.id'), nullable=True)
+    next_id = Column(Integer, ForeignKey('Comments.id'), nullable=True)
     # datetime.now指的是插入数据的当前时间，datetime.now()指的是建表时间
     create_date = Column(DATETIME, default=datetime.now)
+
+    parent = relationship('Comments', foreign_keys=[parent_id])
+    next = relationship('Comments', foreign_keys=[next_id])
+    thread = relationship('Threads', foreign_keys=[threads_id])
+
+    def get_public_dict(self):
+        d = dict()
+        d['id'] = self.id
+        d['user_id'] = self.user_id
+        d['threads_id'] = self.threads_id
+        d['content'] = self.content
+        d['parent_id'] = self.parent_id
+        d['next_id'] = self.next_id
+        d['create_date'] = self.create_date.timestamp()
+        from app_utils import AppUtils
+        session = AppUtils.get_session()
+        code = session.query(Code).filter_by(id=self.code_id).first()
+        if code is not None:
+            d['code_url'] = code.get_download_url()
+        else:
+            d['code_url'] = ''
+        d['username'] = session.query(User).filter_by(id=self.user_id).first().username
+        return d
 
 
 # 代码分享表
@@ -157,3 +257,20 @@ class CodeSharing(db.Model):
     like_nums = Column(Integer, default=0)  # 喜欢数
     dislike_nums = Column(Integer, default=0)  # 不喜欢数
     is_private = Column(BOOLEAN, default=True)  # 是否为私有
+    credits = Column(Integer)  # 售价，以积分
+
+
+# 代码购买表
+# 需要先增加一条Code记录，再添加新加入代码的code_id
+class CodeBought(db.Model):
+    __tablename__ = 'CodeBought'
+    id = Column(Integer, primary_key=True, autoincrement=True)  # 购买ID
+    user_id = Column(Integer, ForeignKey('User.id', ondelete="CASCADE"), nullable=False)  # 购买用户ID
+    code_id = Column(Integer, ForeignKey('Code.id', ondelete="CASCADE"), nullable=False)  # 本地路径
+
+
+# 签到表
+class SignIn(db.Model):
+    __tablename__ = 'SignIn'
+    user_id = Column(Integer, primary_key=True, autoincrement=True)  # 购买ID
+    sign_in_time = Column(DATETIME, default=datetime.now)  # 签到时间

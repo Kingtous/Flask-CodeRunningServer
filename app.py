@@ -2,15 +2,16 @@ from flask import Flask
 from flask_restful import Api
 
 from api.code_runner import CodeRunnerSubmitAPI, CodeRunningQueryAPI
+from api.comments_handler import SubmitComment, DeleteComment, GetComment
 from api.file_upload import UploadFile, GetFile, GetCodeList
 from api.test_response import TestResponse
 from api.threads_handler import ThreadsHandler, DeleteThread, GetUserThread
-from api.user_login_register import Login, Register, GetToken
+from api.user_login_register import Login, Register, GetToken, UserSignIn, GetCredits
 from app_utils import AppUtils
 
 if __name__ == '__main__':
     # 猴子补丁
-    # from gevent import monkey
+    # from gevent import monkey, pywsgi
     #
     # monkey.patch_all()
 
@@ -22,9 +23,11 @@ if __name__ == '__main__':
     api = Api(app)
 
     # 1: 用户登录注册
-    api.add_resource(Login, '/auth/login')
-    api.add_resource(Register, '/auth/register')
-    api.add_resource(GetToken, '/auth/getToken')
+    api.add_resource(Login, '/auth/login')  # 登录
+    api.add_resource(Register, '/auth/register')  # 注册
+    api.add_resource(GetToken, '/auth/getToken')  # 获取新的token
+    api.add_resource(UserSignIn, '/user/signIn')  # 签到
+    api.add_resource(GetCredits, '/user/myCredits')  # 查询自己的点数
 
     # 2: 上传文件
     api.add_resource(UploadFile, '/file/upload')
@@ -40,7 +43,11 @@ if __name__ == '__main__':
     api.add_resource(ThreadsHandler, '/threads/push_show')
     api.add_resource(DeleteThread, '/threads/delete')
     api.add_resource(GetUserThread, '/threads/me')
-    # from werkzeug.debug import DebuggedApplication
+    api.add_resource(SubmitComment, '/threads/comment/submit')
+    api.add_resource(DeleteComment, '/threads/comment/del')
+    api.add_resource(GetComment, '/threads/comment/get')
+
+    from werkzeug.debug import DebuggedApplication
 
     # dapp = DebuggedApplication(app, evalex=True)
     # server = pywsgi.WSGIServer(('0.0.0.0', 5000), dapp)

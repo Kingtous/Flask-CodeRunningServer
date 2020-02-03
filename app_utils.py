@@ -32,7 +32,6 @@ class AppUtils:
         app.config['SQLALCHEMY_DATABASE_URI'] = Cf.base_mysql_connection_url
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
         app.config['SQLALCHEMY_COMMIT_TEARDOWN'] = True
-        app.config['USER_ENABLE_EMAIL'] = False
         db = SQLAlchemy(app)
         Cf.database = db
         Cf.SQLBase = declarative_base()
@@ -67,16 +66,10 @@ class AppUtils:
     @staticmethod
     def validate_username(username):
         from app.database_models import User
-        user = User.query.filter_by(username=username).first()
+        session = AppUtils.get_session()
+        user = session.query(User).filter_by(username=username).first()
         if user is not None:
             raise ValidationError('Please use a different username.')
-
-    @staticmethod
-    def validate_email(email):
-        from app.database_models import User
-        user = User.query.filter_by(email=email).first()
-        if user is not None:
-            raise ValidationError('Please use a different email address.')
 
     @staticmethod
     def get_session():

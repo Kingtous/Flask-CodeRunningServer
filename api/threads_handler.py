@@ -53,6 +53,7 @@ class ThreadsHandler(Resource):
         return ResponseClass.ok_with_data(threads)
 
 
+# 获取用户自身的帖子
 class GetUserThread(Resource):
     parser = reqparse.RequestParser()
     page_num_per_request = 10  # 每次返回10篇

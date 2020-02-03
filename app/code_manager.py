@@ -249,6 +249,7 @@ class CodeManager:
             runner = CodeRunner(code_block)
             glet = running_pool.spawn(runner.run)
             self.process_array.append((runner, glet))
+            # gevent为协程驱动，需要调用gevent.sleep(0)才会进行调度
             gevent.sleep(0)
             # 结束
             self.queue_sem.release()
