@@ -1,3 +1,4 @@
+flask-cors
 pyfiglet
 wtforms
 passlib

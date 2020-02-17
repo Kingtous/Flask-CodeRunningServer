@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 from flask_restful import Api
 
 from api.code_runner import CodeRunnerSubmitAPI, CodeRunningQueryAPI
@@ -11,12 +12,13 @@ from app_utils import AppUtils
 
 if __name__ == '__main__':
     # 猴子补丁
-    # from gevent import monkey, pywsgi
-    #
-    # monkey.patch_all()
+    from gevent import monkey, pywsgi
+
+    monkey.patch_all()
 
     ### 配置
     app = Flask(__name__)
+    CORS(app)
     # 初始化APP
     AppUtils.init(app)
     # 配置API
@@ -49,7 +51,7 @@ if __name__ == '__main__':
 
     from werkzeug.debug import DebuggedApplication
 
-    # dapp = DebuggedApplication(app, evalex=True)
-    # server = pywsgi.WSGIServer(('0.0.0.0', 5000), dapp)
-    # server.serve_forever()
-    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    dapp = DebuggedApplication(app, evalex=True)
+    server = pywsgi.WSGIServer(('0.0.0.0', 5000), dapp)
+    server.serve_forever()
+    # app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
