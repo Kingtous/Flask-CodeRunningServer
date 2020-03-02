@@ -1,3 +1,10 @@
+'''
+@Author: Kingtous
+@Date: 2020-02-17 23:18:47
+@LastEditors: Kingtous
+@LastEditTime: 2020-03-02 10:05:04
+@Description: Kingtous' Code
+'''
 from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api
@@ -12,9 +19,9 @@ from app_utils import AppUtils
 
 if __name__ == '__main__':
     # 猴子补丁
-    from gevent import monkey, pywsgi
-
-    monkey.patch_all()
+    # from gevent import monkey, pywsgi
+    #
+    # monkey.patch_all()
 
     ### 配置
     app = Flask(__name__)
@@ -49,9 +56,7 @@ if __name__ == '__main__':
     api.add_resource(DeleteComment, '/threads/comment/del')
     api.add_resource(GetComment, '/threads/comment/get')
 
-    from werkzeug.debug import DebuggedApplication
-
-    dapp = DebuggedApplication(app, evalex=True)
-    server = pywsgi.WSGIServer(('0.0.0.0', 5000), dapp)
-    server.serve_forever()
-    # app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    # dapp = DebuggedApplication(app, evalex=True)
+    # server = pywsgi.WSGIServer(('0.0.0.0', 5000), dapp)
+    # server.serve_forever()
+    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)

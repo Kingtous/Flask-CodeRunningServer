@@ -1,3 +1,10 @@
+'''
+@Author: Kingtous
+@Date: 2020-01-29 12:51:22
+@LastEditors: Kingtous
+@LastEditTime: 2020-03-02 10:06:16
+@Description: Kingtous' Code
+'''
 import datetime
 import os
 
@@ -15,13 +22,17 @@ class UploadFile(Resource):
 
     @Cf.auth.login_required
     def post(self):
-        file = request.files.get('file', None)
-        if not file:
+        content = request.json.get('content', None)
+        file_name = request.json.get('fileName', None)
+        if not content or not file_name:
             return jsonify(code=-1, msg="参数不对")
         filename = secure_filename(
-            g.user.username + datetime.datetime.now().strftime('_%H-%M-%S-%f_') + file.filename).lower()
+            g.user.username + datetime.datetime.now().strftime('_%H-%M-%S-%f_') + file_name).lower()
         local_path = os.path.join(Cf.upload_path, filename)
-        file.save(local_path)
+        # file.save(local_path)
+        file = open(local_path, encoding="utf-8", mode="w")
+        file.write(content)
+        file.close()
         # 写入数据库
         from app.database_models import Code
         code = Code()
