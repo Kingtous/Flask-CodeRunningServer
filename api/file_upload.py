@@ -8,7 +8,7 @@
 import datetime
 import os
 
-from flask import jsonify, send_from_directory, g, request
+from flask import jsonify, send_from_directory, g, request, make_response
 from flask_restful import Resource
 from sqlalchemy import and_
 from werkzeug.utils import secure_filename
@@ -59,9 +59,23 @@ class UploadFile(Resource):
 
 class GetFile(Resource):
 
-    @Cf.auth.login_required
     def get(self, file_name):
-        return send_from_directory(Cf.upload_path, file_name)
+        args = request.args
+        print(args)
+        token = args.get('token', None)
+        if token is None:
+            return ResponseClass.warn(-2)
+        from app.database_models import User
+        user = User.verify_auth_token(token)
+        if user is not None:
+            response = make_response(send_from_directory(Cf.upload_path, file_name, as_attachment=True))
+            response.headers["Content-Type"] = "application/octet-stream"
+            response.headers["Accept-ranges"] = "bytes"
+            response.headers["Content-Disposition"] = "attachment; filename={}".format(
+                file_name.encode().decode('latin-1'))
+            return response
+        else:
+            return ResponseClass.warn(-1)
 
 
 class GetCodeList(Resource):
