@@ -1,10 +1,11 @@
 import os
+import re
 import shutil
 import sys
-import re
 
 import pyfiglet
 from flask import jsonify
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -21,6 +22,8 @@ class AppUtils:
 
     @staticmethod
     def init(app):
+        # 增加CORS跨域支持
+        CORS(app)
         # APP Server Banner
         print(pyfiglet.figlet_format("Kingtous Kits"))
         print("Code Running Server By Kingtous")

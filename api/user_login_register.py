@@ -59,10 +59,12 @@ class Register(Resource):
             user = User()
             user.username = username
             user.hash_password(password)
+            user.credits = 0
             # 数据库
             from app_config import SQLSession
-            app_utils.AppUtils.add_to_sql(user)
+            session = app_utils.AppUtils.add_to_sql(user)
             token = user.generate_auth_token()
+            session.close()
             return jsonify(code=0, data={"username": username, "token": token, "credits": user.credits})
         except ValidationError as e:
             return jsonify(code=-1, msg=e.args[0])
@@ -98,8 +100,8 @@ class UserSignIn(Resource):
             sign_in_record = SignIn()
             sign_in_record.user_id = user_id
             user.credits = user.credits + 1
-            app_utils.AppUtils.add_to_sql(sign_in_record)
-            app_utils.AppUtils.close_sql(session)
+            session.add(sign_in_record)
+            session.close()
             return ResponseClass.ok()
         else:
             pre_sign_in_time = record.sign_in_time

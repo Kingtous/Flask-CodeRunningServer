@@ -4,10 +4,9 @@ from flask import g
 from flask_httpauth import HTTPBasicAuth
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, SignatureExpired, BadSignature
 from passlib.apps import custom_app_context as pwd_context
-from pymysql import NULL
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.dialects.mysql import *
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 
 import app_config as Cf
 # db
@@ -141,6 +140,7 @@ class Threads(db.Model):
                 next_comment.parent_id = pre_comment.id
                 session.delete(comment)
                 session.commit()
+            session.close()
             return True
         except Exception as e:
             print(e)
@@ -160,11 +160,9 @@ class Threads(db.Model):
                 # 不是队列首部
                 last_comment = session.query(Comments).filter_by(threads_id=self.id, next_id=None).first()
                 comment.parent_id = last_comment.id
-                t_session = AppUtils.add_to_sql(comment)
+                session.add(comment)
                 last_comment.next_id = comment.id
-                t_session.commit()
                 session.commit()
-                t_session.close()
                 session.close()
             return True
         except Exception as e:
@@ -173,10 +171,10 @@ class Threads(db.Model):
 
     # comment_id = -1表示从头开始获取,若不为-1的话，则表示从comment_id开始，数10条
     def get_comments(self, comment_id=-1):
+        session = AppUtils.get_session()
         try:
             if comment_id == -1:
                 comment_id = self.comment_id
-            session = AppUtils.get_session()
             comment = session.query(Comments).filter_by(id=comment_id).first()
             if comment is None:
                 return ResponseClass.warn(ResponseCode.COMMENT_NOT_FOUND)
@@ -190,6 +188,8 @@ class Threads(db.Model):
         except Exception as e:
             print(e)
             return None
+        finally:
+            session.close()
 
     def get_public_dict(self):
         d = dict()
@@ -245,6 +245,7 @@ class Comments(db.Model):
         else:
             d['code_url'] = ''
         d['username'] = session.query(User).filter_by(id=self.user_id).first().username
+        session.close()
         return d
 
 

@@ -52,7 +52,7 @@ class UploadFile(Resource):
         else:
             code.code_type = CodeType.FILE
 
-        AppUtils.add_to_sql(code)
+        AppUtils.add_to_sql(code).close()
         return jsonify(code=ResponseCode.OK_RESPONSE,
                        data={'url': AppUtils.get_network_url(os.path.join(Cf.upload_path, filename))})
 
