@@ -24,14 +24,26 @@ class User(db.Model):
 
     id = Column(Integer, primary_key=True)
     username = db.Column(db.String(32), index=True)
+    nickname = db.Column(db.String(50), default="Fresh Coder")
+    avatar_url = db.Column(db.String(255),
+                           default="http://hbimg.b0.upaiyun.com/5ecab4b5752dea92f62f472cdea1a387f806b43a85b7-4O5QSj_fw236")
     password_hash = db.Column(db.String(128))
     credits = Column(Integer, default=0)  # 积分
+    likes = Column(Integer, default=0)  # 点赞数
 
     def hash_password(self, password):
         self.password_hash = pwd_context.encrypt(password)
 
     def verify_password_only(self, password):
         return pwd_context.verify(password, self.password_hash)
+
+    def get_self_data(self):
+        return {"id": self.id, "username": self.username, "token": self.generate_auth_token(), "credits": self.credits,
+                "avatar_url": self.avatar_url, "nickname": self.nickname}
+
+    # 用于其他访问的数据
+    def get_minimal_data(self):
+        return {"id": self.id, "username": self.username, "avatar_url": self.avatar_url, "nickname": self.nickname}
 
     @staticmethod
     @Cf.auth.verify_password
@@ -61,6 +73,12 @@ class User(db.Model):
             return None  # invalid token
         user = User.query.get(data['id'])
         return user
+
+
+class UserLikes(db.Model):
+    __tablename__ = 'UserLikes'
+    user_id = Column(Integer, primary_key=True)
+    like_user = Column(Integer, primary_key=True)
 
 
 # 积分表

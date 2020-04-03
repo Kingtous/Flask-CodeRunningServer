@@ -9,7 +9,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, scoped_session, Session
 from wtforms import ValidationError
 
 import app_config as Cf
@@ -33,12 +33,15 @@ class AppUtils:
         app.config["CSRF_ENABLED"] = True
         # 初始化数据库
         app.config['SQLALCHEMY_DATABASE_URI'] = Cf.base_mysql_connection_url
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-        app.config['SQLALCHEMY_COMMIT_TEARDOWN'] = True
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        app.config["SQLALCHEMY_ECHO"] = False
         db = SQLAlchemy(app)
         Cf.database = db
         Cf.SQLBase = declarative_base()
-        Cf.SQLEngine = create_engine(Cf.base_mysql_connection_url)
+        Cf.SQLEngine = create_engine(Cf.base_mysql_connection_url,
+                                     pool_recycle=7200,
+                                     pool_size=100,
+                                     echo=False)
         Cf.SQLSessionMaker = sessionmaker(bind=Cf.SQLEngine)
         Cf.SQLSession = scoped_session(Cf.SQLSessionMaker)  # scoped_session保证线程安全
         # 必须import database_models初始化数据库各类!
@@ -75,18 +78,18 @@ class AppUtils:
             raise ValidationError('Please use a different username.')
 
     @staticmethod
-    def get_session():
+    def get_session() -> Session:
         return Cf.SQLSession()
 
     @staticmethod
-    def delete_to_sql(data):
+    def delete_to_sql(data) -> Session:
         session = Cf.SQLSession()
         session.delete(data)
         session.commit()
         return session
 
     @staticmethod
-    def add_to_sql(data):
+    def add_to_sql(data) -> Session:
         session = Cf.SQLSession()
         session.add(data)
         session.commit()

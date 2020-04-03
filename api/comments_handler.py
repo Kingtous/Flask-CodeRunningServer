@@ -73,9 +73,12 @@ class DeleteComment(Resource):
         c = session.query(Comments).filter_by(id=comment_id, user_id=g.user.id).first()
         t = session.query(Threads).filter_by(id=thread_id).first()
         if t is None or c is None:
+            session.close()
             return ResponseClass.warn(ResponseCode.COMMENT_NOT_FOUND)
         result = t.del_comment(comment_id)
         if result:
+            session.close()
             return ResponseClass.ok()
         else:
+            session.close()
             return ResponseClass.warn(ResponseCode.SERVER_ERROR)

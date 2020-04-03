@@ -9,6 +9,7 @@ from flask import jsonify
 
 class ResponseCode:
     # 正常返回
+    ALREADY_LIKED = 1010  # 已经点过赞了
     COMMENT_NOT_FOUND = 1009  # 评论不存在
     ALREADY_SIGN_IN = 1008  # 已经签过到了
     THREAD_NOT_EXIST = 1007  # 帖子不存在

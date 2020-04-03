@@ -57,6 +57,21 @@ class UploadFile(Resource):
                        data={'url': AppUtils.get_network_url(os.path.join(Cf.upload_path, filename))})
 
 
+class DelFile(Resource):
+
+    @Cf.auth.login_required
+    def get(self, id):
+        session = AppUtils.get_session()
+        try:
+            from app.database_models import Code
+            code = session.query(Code).filter_by(user_id=g.user.id, id=id).first()
+            if code is not None:
+                session.delete(code)
+            return jsonify(ResponseClass.ok())
+        finally:
+            session.close()
+
+
 class GetFile(Resource):
 
     def get(self, file_name):

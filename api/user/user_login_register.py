@@ -52,6 +52,7 @@ class Register(Resource):
         password = request.json.get('password', None)
         if username is None or password is None:
             return jsonify(code=ResponseCode.FORMAT_ERROR, msg="用户名密码格式错误")
+        session = app_utils.AppUtils.get_session()
         try:
             # 验证用户名
             app_utils.AppUtils.validate_username(username)
@@ -60,14 +61,15 @@ class Register(Resource):
             user.username = username
             user.hash_password(password)
             user.credits = 0
+            session.add(user)
+            session.commit()
             # 数据库
             from app_config import SQLSession
-            session = app_utils.AppUtils.add_to_sql(user)
-            token = user.generate_auth_token()
-            session.close()
-            return jsonify(code=0, data={"username": username, "token": token, "credits": user.credits})
+            return jsonify(code=0, data=user.get_self_data())
         except ValidationError as e:
             return jsonify(code=-1, msg=e.args[0])
+        finally:
+            session.close()
 
 
 class GetToken(Resource):
