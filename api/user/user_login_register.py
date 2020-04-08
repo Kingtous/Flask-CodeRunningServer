@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @File  : user_login_register.py
 # @Author: Kingtous
@@ -6,12 +6,6 @@
 # @Desc  : 用户登录注册
 
 
-# !/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @File  : user_login_register.py
-# @Author: Kingtous
-# @Date  : 2020-01-24
-# @Desc  :
 from datetime import datetime
 
 from flask import request, jsonify, g
@@ -20,6 +14,7 @@ from wtforms import ValidationError
 
 import app_utils
 from api.response_code import ResponseCode, ResponseClass
+from app.database_models import User
 from app_config import auth
 
 
@@ -31,18 +26,19 @@ class Login(Resource):
         if username is None or password is None:
             return jsonify(code=ResponseCode.FORMAT_ERROR)
         # 查找用户
-        from app.database_models import User
-        user = User.query.filter_by(username=username).first()
-        if user is None:
-            return jsonify(code=ResponseCode.USER_NOT_EXIST)
-        if not user.verify_password_only(password):
-            return jsonify(code=ResponseCode.PASSWORD_ERROR)
-        # 用户验证成功
-        token = user.generate_auth_token()
-        return jsonify(code=ResponseCode.OK_RESPONSE, data={
-            "token": token,
-            "username": username
-        })
+        session = app_utils.AppUtils.get_session()
+        try:
+            user = session.query(User).filter_by(username=username).first()
+            if user is None:
+                return jsonify(code=ResponseCode.USER_NOT_EXIST)
+            if not user.verify_password_only(password):
+                return jsonify(code=ResponseCode.PASSWORD_ERROR)
+            # 用户验证成功
+            return ResponseClass.ok_with_data(
+                user.get_self_data()
+            )
+        finally:
+            session.close()
 
 
 class Register(Resource):

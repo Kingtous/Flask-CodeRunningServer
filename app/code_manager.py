@@ -7,11 +7,11 @@
 import os
 import subprocess
 import tempfile
-import time
 from threading import Semaphore, Thread
 
 # 代码运行
 import gevent
+import time
 
 
 class CodeBlock:
@@ -246,6 +246,7 @@ class CodeManager:
             self.queue_sem.acquire()
             # 开始
             runner = CodeRunner(code_block)
+            from app_config import running_pool
             glet = running_pool.spawn(runner.run)
             self.process_array.append((runner, glet))
             # gevent为协程驱动，需要调用gevent.sleep(0)才会进行调度

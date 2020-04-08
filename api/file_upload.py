@@ -51,10 +51,15 @@ class UploadFile(Resource):
             code.code_type = CodeType.JAVA
         else:
             code.code_type = CodeType.FILE
-
-        AppUtils.add_to_sql(code).close()
-        return jsonify(code=ResponseCode.OK_RESPONSE,
-                       data={'url': AppUtils.get_network_url(os.path.join(Cf.upload_path, filename))})
+        session = AppUtils.get_session()
+        try:
+            session.add(code)
+            session.commit()
+            return jsonify(code=ResponseCode.OK_RESPONSE,
+                           data={'id': code.id,
+                                 'url': AppUtils.get_network_url(os.path.join(Cf.upload_path, filename))})
+        finally:
+            session.close()
 
 
 class DelFile(Resource):

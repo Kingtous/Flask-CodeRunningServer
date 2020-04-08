@@ -18,6 +18,9 @@ from app_utils import AppUtils
 db = Cf.database
 auth = HTTPBasicAuth()
 
+expiration = 3600
+s = Serializer(Cf.secret_key, expires_in=expiration)
+
 
 # 用户表
 class User(db.Model):
@@ -64,15 +67,14 @@ class User(db.Model):
         # print("鉴权花费：%f" % (time.clock() - t1))
         return True
 
-    def generate_auth_token(self, expiration=3600):
-        s = Serializer(Cf.secret_key, expires_in=expiration)
+    def generate_auth_token(self):
         return s.dumps({'id': self.id, 'username': self.username}).decode()
 
     @staticmethod
     def verify_auth_token(token):
-        s = Serializer(Cf.secret_key)
+        serializer = Serializer(Cf.secret_key)
         try:
-            data = s.loads(token)
+            data = serializer.loads(token)
         except SignatureExpired:
             return None  # valid token, but expired
         except BadSignature:
@@ -167,7 +169,6 @@ class Threads(db.Model):
                 # 对首
                 self.comment_id = comment.next_id
                 session.delete(comment)
-                session.commit()
             elif comment.next_id is None:
                 # 队尾
                 session.delete(comment)
@@ -178,7 +179,7 @@ class Threads(db.Model):
                 pre_comment.next_id = next_comment.id
                 next_comment.parent_id = pre_comment.id
                 session.delete(comment)
-                session.commit()
+            session.commit()
             session.close()
             return True
         except Exception as e:

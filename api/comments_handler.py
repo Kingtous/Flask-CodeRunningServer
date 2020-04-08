@@ -5,7 +5,8 @@
 # @Date  : 2020-02-03
 # @Desc  : 评论
 from flask import request, g
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
+from sqlalchemy import desc
 
 from api.response_code import ResponseClass, ResponseCode
 from app_config import auth
@@ -49,15 +50,32 @@ class SubmitComment(Resource):
 
 
 class GetComment(Resource):
+    parser = reqparse.RequestParser()
+
+    def __init__(self):
+        self.parser.add_argument("thread_id", type=int)
+        self.parser.add_argument("page", type=int)
 
     @auth.login_required
     def get(self):
-        thread_id = request.json.get('thread_id', None)
+        args = self.parser.parse_args()
+        thread_id = args.get("thread_id", None)
+        page = args.get("page", None)
+        if thread_id is None or page is None:
+            return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
         session = AppUtils.get_session()
-        from app.database_models import Comments
-        comments = session.query(Comments).filter_by(threads_id=thread_id).all()
-        comments = [item.get_public_dict() for item in comments]
-        return ResponseClass.ok_with_data(comments)
+        try:
+            from app.database_models import Comments
+            comments = session.query(Comments) \
+                .filter_by(threads_id=thread_id) \
+                .order_by(desc(Comments.create_date)) \
+                .offset(int(page) * 10) \
+                .limit(10) \
+                .all()
+            comments = [item.get_public_dict() for item in comments]
+            return ResponseClass.ok_with_data(comments)
+        finally:
+            session.close()
 
 
 class DeleteComment(Resource):
