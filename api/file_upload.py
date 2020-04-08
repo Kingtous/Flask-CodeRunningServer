@@ -10,11 +10,11 @@ import os
 
 from flask import jsonify, send_from_directory, g, request, make_response
 from flask_restful import Resource
-from sqlalchemy import and_
 from werkzeug.utils import secure_filename
 
 import app_config as Cf
 from api.response_code import ResponseCode, ResponseClass
+from app.database_models import Code
 from app_utils import AppUtils
 
 
@@ -95,10 +95,11 @@ class GetFile(Resource):
 
 class GetCodeList(Resource):
     @Cf.auth.login_required
-    def get(self):
+    def get(self, offset: int):
         session = AppUtils.get_session()
-        from app.database_models import Code
-        from app.code_manager import CodeType
-        result = session.query(Code).filter(and_(Code.user_id == g.user.id, Code.code_type != CodeType.FILE)).all()
-        result = [item.get_public_dict() for item in result]
-        return ResponseClass.ok_with_data(result)
+        try:
+            result = Code.get_code(session, g.user.id, offset)
+            result = list(map(Code.get_public_dict, result))
+            return ResponseClass.ok_with_data(result)
+        finally:
+            session.close()

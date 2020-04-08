@@ -13,8 +13,6 @@ from threading import Semaphore, Thread
 # 代码运行
 import gevent
 
-from app_config import PYTHON3_EXE, running_pool, C_EXE, JAVA_EXE, JAVA_COMPILER_EXE, CPP_EXE
-
 
 class CodeBlock:
 
@@ -85,6 +83,7 @@ class CodeRunner:
             return '', 'Running Time > ' + str(time_limit) + 's'
 
     def run(self):
+        from app_config import PYTHON3_EXE, C_EXE, JAVA_EXE, JAVA_COMPILER_EXE, CPP_EXE
         from app_config import SQLSession
         session = SQLSession()
         self.session = session

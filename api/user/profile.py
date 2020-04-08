@@ -4,6 +4,7 @@ from flask import request, g
 from flask_restful import Resource
 
 from api.response_code import ResponseClass, ResponseCode
+from app.database_models import User
 from app_config import auth
 from app_utils import AppUtils
 
@@ -38,7 +39,10 @@ class UserStatistic(Resource):
             user = g.user
             if user.id != id:
                 # 查询他人的信息
-                return ResponseClass.ok_with_data(user.get_minimal_data())
+                query_user = session.query(User).filter_by(id=id).first()
+                return ResponseClass.ok_with_data(
+                    query_user.get_minimal_data()) if query_user is not None else ResponseClass.warn(
+                    ResponseCode.USER_NOT_EXIST)
             else:
                 ResponseClass.ok_with_data(user.get_self_data())
         finally:

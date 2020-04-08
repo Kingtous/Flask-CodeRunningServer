@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 from flask import g
 from flask_httpauth import HTTPBasicAuth
@@ -6,7 +7,7 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, Signatur
 from passlib.apps import custom_app_context as pwd_context
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.dialects.mysql import *
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Session
 
 import app_config as Cf
 # db
@@ -102,10 +103,25 @@ class Code(db.Model):
     local_path = Column(String(256), nullable=False)  # 本地路径
     create_date = Column(DATETIME, default=datetime.now)
 
+    # 默认返回十条
+    @staticmethod
+    def get_code(session: Session, user_id: int, offset: int):
+        codes: List[Code] = session.query(Code).filter_by(user_id=user_id) \
+            .order_by(db.desc(Code.create_date)) \
+            .offset(offset) \
+            .limit(10) \
+            .all()
+        return codes
+
     # 转换为下载地址
     def get_download_url(self):
         from app_utils import AppUtils
         return AppUtils.get_network_url(self.local_path)
+
+    # 读取代码返回
+    def read_codes(self) -> str:
+        with open(self.local_path, 'r', encoding='utf-8') as f:
+            return f.read()
 
     def get_public_dict(self):
         d = dict()

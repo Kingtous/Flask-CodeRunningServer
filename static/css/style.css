@@ -1,0 +1,13 @@
+html, body {
+    height: 100%;
+}
+
+#content {
+    height: 100%;
+    position: relative;
+}
+
+#fullscreen-center-text {
+    margin: auto auto auto auto;
+    width: 100%;
+}

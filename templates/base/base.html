@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+        <!-- Materialize 框架 -->
+        <link rel="stylesheet" href="/static/css/style.css" type="text/css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/css/materialize.min.css">
+        <title>{% block title %}{% endblock %} - Kingtous Server</title>
+    {% endblock %}
+</head>
+<body>
+<div id="content">
+    {% block nav %}
+        <nav>
+            <div class="nav-wrapper">
+                <div class="container">
+                    <a href="#" class="brand-logo">Coder Server</a>
+                    <ul id="nav-mobile" class="right hide-on-med-and-down">
+                        <li><a href="#">首页</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    {% endblock %}
+    {% block content %}{% endblock %}
+</div>
+<div id="footer">
+    {% block  footer %}
+    {% endblock %}
+</div>
+</body>
+</html>

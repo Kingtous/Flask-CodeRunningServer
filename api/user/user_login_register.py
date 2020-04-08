@@ -93,28 +93,28 @@ class UserSignIn(Resource):
     def post(self):
         user_id = g.user.id
         session = app_utils.AppUtils.get_session()
-        from app.database_models import SignIn
-        record = session.query(SignIn).filter_by(user_id=user_id).first()
-        from app.database_models import User
-        user = session.query(User).filter_by(id=user_id).first()
-        if record is None:
-            # 从来没签过到
-            sign_in_record = SignIn()
-            sign_in_record.user_id = user_id
-            user.credits = user.credits + 1
-            session.add(sign_in_record)
-            session.close()
-            return ResponseClass.ok()
-        else:
-            pre_sign_in_time = record.sign_in_time
-            current_time = datetime.now()
-            if current_time.day > pre_sign_in_time.day:
-                # 可以签到，更新时间
-                record.sign_in_time = current_time
+        try:
+            from app.database_models import SignIn
+            record = session.query(SignIn).filter_by(user_id=user_id).first()
+            from app.database_models import User
+            user = session.query(User).filter_by(id=user_id).first()
+            if record is None:
+                # 从来没签过到
+                sign_in_record = SignIn()
+                sign_in_record.user_id = user_id
                 user.credits = user.credits + 1
-                app_utils.AppUtils.update_sql(session)
-                app_utils.AppUtils.close_sql(session)
+                session.add(sign_in_record)
                 return ResponseClass.ok()
             else:
-                app_utils.AppUtils.close_sql(session)
-                return ResponseClass.warn(ResponseCode.ALREADY_SIGN_IN)
+                pre_sign_in_time = record.sign_in_time
+                current_time = datetime.now()
+                if current_time.day > pre_sign_in_time.day:
+                    # 可以签到，更新时间
+                    record.sign_in_time = current_time
+                    user.credits = user.credits + 1
+                    return ResponseClass.ok()
+                else:
+                    return ResponseClass.warn(ResponseCode.ALREADY_SIGN_IN)
+        finally:
+            session.commit()
+            session.close()
