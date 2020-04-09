@@ -9,7 +9,8 @@ def set_up_api(app):
     from api.token import UploadTokenAPI
     from api.user.profile import AlterProfile, UserStatistic, UserLikeApi
     from api.user.user_login_register import Login, Register, GetToken, UserSignIn, GetCredits
-
+    from api.mail_handler import MailHandler
+    from api.user.user_login_register import UserResetPassword
     api = Api(app)
     # 1: 用户登录注册资料点赞
     api.add_resource(Login, '/auth/login')  # 登录
@@ -20,6 +21,8 @@ def set_up_api(app):
     api.add_resource(AlterProfile, '/user/profile/alter')  # 修改自己的资料
     api.add_resource(UserStatistic, '/user/profile/<id>')  # 查询统计数据
     api.add_resource(UserLikeApi, '/user/profile/like/<user_id>')  # 点赞
+    api.add_resource(MailHandler, '/auth/mail/reset_password')  # 发送重置邮件
+    api.add_resource(UserResetPassword, '/auth/profile/reset_password')  # 重置密码接口
 
     # 2: 上传文件
     api.add_resource(UploadTokenAPI, '/file/getUploadToken')  # 获取上传token使用的是七牛云

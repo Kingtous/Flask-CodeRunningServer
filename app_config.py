@@ -1,7 +1,9 @@
 import os
 from typing import Union
 
+from flask_cache import Cache
 from flask_httpauth import HTTPBasicAuth
+from flask_mail import Mail
 # 可执行二进制文件配置
 from flask_sqlalchemy import SQLAlchemy
 from gevent import pool
@@ -32,3 +34,13 @@ SQLSession: scoped_session = Union[scoped_session]
 # 协程运行池
 running_pool = pool.Pool(10)  # 限制10个协程
 code_manager: CodeManager = Union[CodeManager]
+# 邮件系统配置
+mail_manager: Mail = Union[None, Mail]
+MAIL_SERVER = 'smtp.ym.163.com'
+MAIL_PORT = 25
+MAIL_USE_TLS = True
+MAIL_USE_SSL = False
+MAIL_USERNAME = 'robot@kingtous.cn'
+MAIL_PASSWORD = 'robot123'
+# 缓存
+cache: Cache = Union[None, Cache]

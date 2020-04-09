@@ -5,7 +5,9 @@ import sys
 
 import pyfiglet
 from flask import jsonify
+from flask_cache import Cache
 from flask_cors import CORS
+from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -21,21 +23,21 @@ from app.code_manager import CodeManager
 class AppUtils:
 
     @staticmethod
-    def init(app):
+    def init(flask_app):
         # 增加CORS跨域支持
-        CORS(app)
+        CORS(flask_app)
         # APP Server Banner
         print(pyfiglet.figlet_format("Kingtous Kits"))
         print("Code Running Server By Kingtous")
         # 初始化secret_key
-        app.config['SECRET_KEY'] = Cf.secret_key
+        flask_app.config['SECRET_KEY'] = Cf.secret_key
         # 防范CSRF攻击
-        app.config["CSRF_ENABLED"] = True
+        flask_app.config["CSRF_ENABLED"] = True
         # 初始化数据库
-        app.config['SQLALCHEMY_DATABASE_URI'] = Cf.base_mysql_connection_url
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-        app.config["SQLALCHEMY_ECHO"] = False
-        db = SQLAlchemy(app)
+        flask_app.config['SQLALCHEMY_DATABASE_URI'] = Cf.base_mysql_connection_url
+        flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        flask_app.config["SQLALCHEMY_ECHO"] = False
+        db = SQLAlchemy(flask_app)
         Cf.database = db
         Cf.SQLBase = declarative_base()
         Cf.SQLEngine = create_engine(Cf.base_mysql_connection_url,
@@ -44,6 +46,8 @@ class AppUtils:
                                      echo=False)
         Cf.SQLSessionMaker = sessionmaker(bind=Cf.SQLEngine)
         Cf.SQLSession = scoped_session(Cf.SQLSessionMaker)  # scoped_session保证线程安全
+        # 初始化邮件系统
+        AppUtils.init_mail(flask_app)
         # 必须import database_models初始化数据库各类!
         import app.database_models
         print(app.database_models)
@@ -60,6 +64,33 @@ class AppUtils:
 
         # 启动代码运行服务
         Cf.code_manager = CodeManager()
+        # 启动缓存
+        # TODO simple只是用dict保存，后期使用redis替换
+        Cf.cache = Cache(flask_app, config={'CACHE_TYPE': 'simple'})
+        # 初始化完成，回调
+        AppUtils.on_init_success(flask_app)
+
+    # 初始化成功
+    @staticmethod
+    def on_init_success(flask_app):
+        with flask_app.app_context():
+            # message = Message(subject='Code Running Server服务变更',
+            #                   recipients=['kingtous@qq.com'],
+            #                   body='服务已启动通知')
+            # Cf.mail_manager.send(message)
+            # print("已发送测试邮件")
+            pass
+
+    @staticmethod
+    def init_mail(app):
+        app.config['MAIL_SERVER'] = Cf.MAIL_SERVER
+        app.config['MAIL_PORT'] = Cf.MAIL_PORT
+        app.config['MAIL_USE_TLS'] = Cf.MAIL_USE_TLS
+        app.config['MAIL_USERNAME'] = Cf.MAIL_USERNAME
+        app.config['MAIL_PASSWORD'] = Cf.MAIL_PASSWORD
+        app.config['MAIL_USE_SSL'] = Cf.MAIL_USE_SSL
+        app.config['MAIL_DEFAULT_SENDER'] = Cf.MAIL_USERNAME
+        Cf.mail_manager = Mail(app)
 
     @staticmethod
     def get_network_url(local_url):

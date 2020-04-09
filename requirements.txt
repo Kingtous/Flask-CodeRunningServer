@@ -19,3 +19,5 @@ pytz==2019.3
 six==1.14.0
 SQLAlchemy==1.3.13
 Werkzeug==0.16.0
+flask-mail
+flask-cache

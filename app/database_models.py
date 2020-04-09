@@ -27,13 +27,19 @@ class User(db.Model):
     __tablename__ = 'User'
 
     id = Column(Integer, primary_key=True)
-    username = db.Column(db.String(32), index=True)
+    username = db.Column(db.String(32), unique=True)
     nickname = db.Column(db.String(50), default="Fresh Coder")
+    mail = db.Column(db.String(128), unique=True, nullable=False, index=True)
     avatar_url = db.Column(db.String(255),
                            default="http://hbimg.b0.upaiyun.com/5ecab4b5752dea92f62f472cdea1a387f806b43a85b7-4O5QSj_fw236")
     password_hash = db.Column(db.String(128))
     credits = Column(Integer, default=0)  # 积分
     likes = Column(Integer, default=0)  # 点赞数
+
+    @staticmethod
+    def password_illigal(password):
+        # TODO
+        return True
 
     def hash_password(self, password):
         self.password_hash = pwd_context.encrypt(password)
