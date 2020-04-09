@@ -40,7 +40,36 @@
         - 发布售卖信息
         - 购买商品
         - 删除售卖信息
-        
+
+#### 执行前需要配置的环境变量
+程序通过`os.environ.get`获取环境变量，请将下列条目修改后导入你对环境变量
+```python
+# 七牛云KEY
+QINIU_ACCESS_KEY = ""
+QINIU_SECRET_KEY = ""
+BUCKET_NAME = ""
+FILE_CDN_URL = ""
+# 邮件
+MAIL_SERVER = ''
+MAIL_PORT = 25
+MAIL_USE_TLS = True
+MAIL_USE_SSL = False
+MAIL_USERNAME = ''
+MAIL_PASSWORD = ''
+# 代码执行器的可执行路径
+CODE_POOL = 10 #代码执行池能容纳的最大协程数
+PYTHON3_EXE = '/usr/bin/python3'
+CPP_EXE = '/usr/bin/g++'
+C_EXE = '/usr/bin/gcc'
+JAVA_EXE = '/usr/bin/java'
+JAVA_COMPILER_EXE = '/usr/bin/javac'
+BASH_EXE = '/bin/bash'
+# 全局配置
+base_url = 'http://127.0.0.1:5000'
+base_mysql_connection_url = 'mysql+pymysql://xxx:xxx@localhost:8889/xxx?charset=utf8'
+secret_key = "12345678901234567890123456789012"
+```
+
 #### API文档
 代码未完全写好，未做很多优化，代码变动会很大，文档暂时不提供。
 

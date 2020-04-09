@@ -1,8 +1,11 @@
+import os
 import sys
 
 from qiniu import Auth
 
-from common.constants.tokens import QINIU_SECRET_KEY, QINIU_ACCESS_KEY, BUCKET_NAME
+QINIU_SECRET_KEY = os.environ.get("QINIU_SECRET_KEY")
+QINIU_ACCESS_KEY = os.environ.get("QINIU_ACCESS_KEY")
+BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
 def get_upload_token() -> str:
