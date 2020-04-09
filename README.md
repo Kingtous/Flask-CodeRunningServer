@@ -4,6 +4,8 @@
 
 - 编程语言
     - Python 3.6+
+- 框架
+    - Flask + Redis(之后在生产环境中适配) + SQLAlchemy ORM + MySQL + SMTP
 
 - 目前有等功能（Api）
     - 用户功能
@@ -42,7 +44,9 @@
         - 删除售卖信息
 
 #### 执行前需要配置的环境变量
-程序通过`os.environ.get`获取环境变量，请将下列条目修改后导入你对环境变量
+程序通过`os.environ.get`获取环境变量，请将`.env.example`条目修改成你的配置后更名为`.env`、修改`web_uwsgi.ini`
+
+通过`main.py`或`web_uwsgi.ini`执行服务器
 ```python
 # 七牛云KEY
 QINIU_ACCESS_KEY = ""

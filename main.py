@@ -5,15 +5,23 @@
 @LastEditTime: 2020-03-02 10:05:04
 @Description: Kingtous' Code
 '''
+import os
+
+# 导入环境变量
+from dotenv import load_dotenv
 from flask import Flask, render_template
 # 猴子补丁，增加并发
-from gevent import pywsgi
+from gevent import pywsgi, monkey
 from werkzeug.debug import DebuggedApplication
 
 from app_utils import AppUtils
 from router import app_router
 
-# monkey.patch_all()
+dotenv_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '.env')
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path, override=True)  # override=True: 覆写已存在的变量
+
+monkey.patch_all()
 
 # 生成app
 app = Flask(__name__)

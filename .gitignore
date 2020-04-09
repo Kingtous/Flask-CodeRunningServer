@@ -2,3 +2,4 @@ uploaded/**
 logs/**
 .idea/**
 .vscode/**
+.env
