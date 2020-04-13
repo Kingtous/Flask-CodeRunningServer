@@ -1,15 +1,15 @@
 def set_up_api(app):
     from flask_restful import Api
 
-    from api.code_runner import CodeRunnerSubmitAPI, CodeRunningQueryAPI
-    from api.comments_handler import SubmitComment, DeleteComment, GetComment
-    from api.file_upload import UploadFile, GetFile, GetCodeList, DelFile
-    from api.test_response import TestResponse
-    from api.threads_handler import ThreadsHandler, DeleteThread, GetUserThread
-    from api.token import UploadTokenAPI
+    from api.code.code_runner import CodeRunnerSubmitAPI, CodeRunningQueryAPI
+    from api.thread.comments_handler import SubmitComment, DeleteComment, GetComment
+    from api.file.file_upload import UploadFile, GetFile, GetCodeList, DelFile
+    from api.test.test_response import TestResponse
+    from api.thread.threads_handler import ThreadsHandler, DeleteThread, GetUserThread
+    from api.qiniu.token import UploadTokenAPI
     from api.user.profile import AlterProfile, UserStatistic, UserLikeApi
     from api.user.user_login_register import Login, Register, GetToken, UserSignIn, GetCredits
-    from api.mail_handler import MailHandler
+    from api.mail.mail_handler import MailHandler
     from api.user.user_login_register import UserResetPassword
     api = Api(app)
     # 1: 用户登录注册资料点赞

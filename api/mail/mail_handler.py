@@ -13,6 +13,8 @@
 #  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 #  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 #  OR OTHER DEALINGS IN THE SOFTWARE.
+
+#
 from random import randrange
 
 from flask import request
@@ -20,7 +22,7 @@ from flask_mail import Message
 from flask_restful import Resource
 
 import app_config as conf
-from api.response_code import ResponseClass, ResponseCode
+from common.constants.response_code import ResponseClass, ResponseCode
 from app.database_models import User
 from app_utils import AppUtils
 

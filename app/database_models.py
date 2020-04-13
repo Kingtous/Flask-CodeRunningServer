@@ -11,7 +11,7 @@ from sqlalchemy.orm import relationship, Session
 
 import app_config as Cf
 # db
-from api.response_code import ResponseClass, ResponseCode
+from common.constants.response_code import ResponseClass, ResponseCode
 from app.code_manager import CodeStatus
 from app_utils import AppUtils
 

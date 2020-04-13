@@ -1,6 +1,6 @@
 #### 代码服务器后端
 
-前端链接（使用`React + dva2`，刚开始开发）：[Github链接](https://github.com/Kingtous/code-running-front)
+前端链接（使用`Flutter Web (beta 1.17.0) + Bloc`，刚开始开发）：[Github链接](https://github.com/Kingtous/Flutter-CodeRunningWeb)
 
 - 编程语言
     - Python 3.6+

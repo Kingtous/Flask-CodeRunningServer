@@ -13,7 +13,7 @@ from flask import request, jsonify, g
 from flask_restful import Resource
 
 import app_utils
-from api.response_code import ResponseCode, ResponseClass
+from common.constants.response_code import ResponseCode, ResponseClass
 from app.database_models import User
 from app_config import auth, cache
 

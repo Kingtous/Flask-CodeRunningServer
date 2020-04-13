@@ -14,13 +14,13 @@ from flask import Flask, render_template
 from gevent import pywsgi, monkey
 from werkzeug.debug import DebuggedApplication
 
-from app_utils import AppUtils
-from router import app_router
-
+# 必须先导入环境变量
 dotenv_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '.env')
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path, override=True)  # override=True: 覆写已存在的变量
 
+from app_utils import AppUtils
+from router import app_router
 monkey.patch_all()
 
 # 生成app

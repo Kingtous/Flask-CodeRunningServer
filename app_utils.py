@@ -15,7 +15,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session, Session
 from wtforms import ValidationError
 
 import app_config as Cf
-from api.response_code import ResponseCode
+from common.constants.response_code import ResponseCode
 from app.code_manager import CodeManager
 
 

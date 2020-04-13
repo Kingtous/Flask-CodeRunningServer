@@ -3,7 +3,7 @@ import time
 from flask import request, g
 from flask_restful import Resource
 
-from api.response_code import ResponseClass, ResponseCode
+from common.constants.response_code import ResponseClass, ResponseCode
 from app.database_models import User
 from app_config import auth
 from app_utils import AppUtils
