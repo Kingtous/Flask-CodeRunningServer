@@ -3,13 +3,13 @@ import time
 from flask import request, g
 from flask_restful import Resource
 
-from common.constants.response_code import ResponseClass, ResponseCode
 from app.database_models import User
 from app_config import auth
 from app_utils import AppUtils
+from common.constants.response_code import ResponseClass, ResponseCode
 
 
-# 修改资料
+# 修改资料,只能改昵称和头像
 class AlterProfile(Resource):
 
     @auth.login_required

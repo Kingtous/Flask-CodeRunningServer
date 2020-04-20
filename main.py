@@ -10,9 +10,8 @@ import os
 # 导入环境变量
 from dotenv import load_dotenv
 from flask import Flask, render_template
+
 # 猴子补丁，增加并发
-from gevent import pywsgi, monkey
-from werkzeug.debug import DebuggedApplication
 
 # 必须先导入环境变量
 dotenv_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '.env')
@@ -21,7 +20,7 @@ if os.path.exists(dotenv_path):
 
 from app_utils import AppUtils
 from router import app_router
-monkey.patch_all()
+# monkey.patch_all()
 
 # 生成app
 app = Flask(__name__)
@@ -39,15 +38,15 @@ def index_page():
 #
 def start_server():
     # 配置 pywsgi
-    dapp = DebuggedApplication(app, evalex=True)
-    server = pywsgi.WSGIServer(('0.0.0.0', 5000), dapp)
-    server.serve_forever()
+    # dapp = DebuggedApplication(app, evalex=True)
+    # server = pywsgi.WSGIServer(('0.0.0.0', 5000), dapp)
+    # server.serve_forever()
     # 运行 flask
-    # app.run(host="0.0.0.0",
-    #         port=5000,
-    #         debug=True,
-    #         use_reloader=False
-    #         )
+    app.run(host="0.0.0.0",
+            port=5000,
+            debug=True,
+            use_reloader=False
+            )
 
 
 if __name__ == '__main__':

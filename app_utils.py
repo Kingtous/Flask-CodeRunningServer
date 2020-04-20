@@ -15,8 +15,8 @@ from sqlalchemy.orm import sessionmaker, scoped_session, Session
 from wtforms import ValidationError
 
 import app_config as Cf
-from common.constants.response_code import ResponseCode
 from app.code_manager import CodeManager
+from common.constants.response_code import ResponseCode
 
 
 # 全局Utils
@@ -107,6 +107,12 @@ class AppUtils:
         user = session.query(User).filter_by(username=username).first()
         if user is not None:
             raise ValidationError('Please use a different username.')
+
+    @staticmethod
+    def serialize(model):
+        from sqlalchemy.orm import class_mapper
+        columns = [c.key for c in class_mapper(model.__class__).columns]
+        return dict((c, getattr(model, c)) for c in columns)
 
     @staticmethod
     def get_session() -> Session:

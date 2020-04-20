@@ -25,7 +25,6 @@ from flask import request, g
 from flask_restful import Resource, reqparse
 from sqlalchemy import desc
 
-from common.constants.response_code import ResponseClass, ResponseCode
 from app_config import auth
 # id = Column(Integer, primary_key=True, autoincrement=True)  # 评论ID
 # user_id = Column(Integer, ForeignKey('User.id'), nullable=False)
@@ -37,6 +36,7 @@ from app_config import auth
 # # datetime.now指的是插入数据的当前时间，datetime.now()指的是建表时间
 # create_date = Column(DATETIME, default=datetime.now)
 from app_utils import AppUtils
+from common.constants.response_code import ResponseClass, ResponseCode
 
 
 class SubmitComment(Resource):
@@ -63,7 +63,7 @@ class SubmitComment(Resource):
         if result:
             return ResponseClass.ok()
         else:
-            return ResponseClass.warn(ResponseCode.SERVER_ERROR)
+            return ResponseClass.warn(ResponseCode.OPERATION_TOO_FAST)
 
 
 class GetComment(Resource):

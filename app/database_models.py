@@ -8,18 +8,22 @@ from passlib.apps import custom_app_context as pwd_context
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.dialects.mysql import *
 from sqlalchemy.orm import relationship, Session
+from sqlalchemy.sql.sqltypes import Boolean
 
 import app_config as Cf
-# db
-from common.constants.response_code import ResponseClass, ResponseCode
 from app.code_manager import CodeStatus
 from app_utils import AppUtils
+# db
+from common.constants.response_code import ResponseClass, ResponseCode
 
 db = Cf.database
 auth = HTTPBasicAuth()
 
 expiration = 3600
 s = Serializer(Cf.secret_key, expires_in=expiration)
+
+USER_ROLE_USER = 0
+USER_ROLE_ADMIN = 1
 
 
 # 用户表
@@ -35,6 +39,9 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     credits = Column(Integer, default=0)  # 积分
     likes = Column(Integer, default=0)  # 点赞数
+
+    # TODO 职责
+    # role = Column(Integer, default=USER_ROLE_USER) # 职责
 
     @staticmethod
     def password_illigal(password):
@@ -194,6 +201,10 @@ class Threads(db.Model):
 
     def submit_comment(self, comment):
         try:
+            last_time_commented = Cf.cache.get("comment_" + str(comment.user_id))
+            if last_time_commented is not None:
+                return False
+            Cf.cache.add("comment_" + str(comment.user_id), datetime.now().timestamp(), timeout=10)
             if self.comment_id is None:
                 # 对首
                 comment.threads_id = self.id
@@ -208,6 +219,8 @@ class Threads(db.Model):
                 comment.parent_id = last_comment.id
                 session.add(comment)
                 last_comment.next_id = comment.id
+                user = session.query(User).filter_by(id=self.user_id).first()
+                user.credits += 10
                 session.commit()
                 session.close()
             return True
@@ -295,25 +308,26 @@ class Comments(db.Model):
         return d
 
 
-# 代码分享表
-class CodeSharing(db.Model):
-    __tablename__ = 'CodeSharing'
-    id = Column(Integer, primary_key=True, autoincrement=True)  # 分享的ID
-    user_id = Column(Integer, ForeignKey('User.id'), nullable=False)  # 分享人
-    code_id = Column(Integer, ForeignKey('Code.id', ondelete="CASCADE"), nullable=False)  # 本地路径
-    like_nums = Column(Integer, default=0)  # 喜欢数
-    dislike_nums = Column(Integer, default=0)  # 不喜欢数
-    is_private = Column(BOOLEAN, default=True)  # 是否为私有
-    credits = Column(Integer)  # 售价，以积分
-
-
-# 代码购买表
-# 需要先增加一条Code记录，再添加新加入代码的code_id
-class CodeBought(db.Model):
-    __tablename__ = 'CodeBought'
-    id = Column(Integer, primary_key=True, autoincrement=True)  # 购买ID
-    user_id = Column(Integer, ForeignKey('User.id', ondelete="CASCADE"), nullable=False)  # 购买用户ID
-    code_id = Column(Integer, ForeignKey('Code.id', ondelete="CASCADE"), nullable=False)  # 本地路径
+#
+# # 代码分享表
+# class CodeSharing(db.Model):
+#     __tablename__ = 'CodeSharing'
+#     id = Column(Integer, primary_key=True, autoincrement=True)  # 分享的ID
+#     user_id = Column(Integer, ForeignKey('User.id'), nullable=False)  # 分享人
+#     code_id = Column(Integer, ForeignKey('Code.id', ondelete="CASCADE"), nullable=False)  # 本地路径
+#     like_nums = Column(Integer, default=0)  # 喜欢数
+#     dislike_nums = Column(Integer, default=0)  # 不喜欢数
+#     is_private = Column(BOOLEAN, default=True)  # 是否为私有
+#     credits = Column(Integer)  # 售价，以积分
+#
+#
+# # 代码购买表
+# # 需要先增加一条Code记录，再添加新加入代码的code_id
+# class CodeBought(db.Model):
+#     __tablename__ = 'CodeBought'
+#     id = Column(Integer, primary_key=True, autoincrement=True)  # 购买ID
+#     user_id = Column(Integer, ForeignKey('User.id', ondelete="CASCADE"), nullable=False)  # 购买用户ID
+#     code_id = Column(Integer, ForeignKey('Code.id', ondelete="CASCADE"), nullable=False)  # 本地路径
 
 
 # 签到表
@@ -321,3 +335,35 @@ class SignIn(db.Model):
     __tablename__ = 'SignIn'
     user_id = Column(Integer, primary_key=True, autoincrement=True)  # 购买ID
     sign_in_time = Column(DATETIME, default=datetime.now)  # 签到时间
+
+
+# 物品
+class Item(db.Model):
+    __tablename__ = 'Item'
+    id = Column(Integer, primary_key=True, autoincrement=True)  # 物品
+    name = Column(String(128))  # 商品名字
+    detail = Column(String(1024))  # 商品详情
+    credits = Column(Integer)  # 需要点数
+    isOn = Column(Boolean, default=True)  # 是否上架
+
+
+# 购物车
+class Cart(db.Model):
+    __tablename__ = 'Cart'
+    id = Column(Integer, primary_key=True, autoincrement=True)  # 购买ID
+    user_id = Column(Integer, ForeignKey('User.id', ondelete="RESTRICT"), nullable=False, primary_key=True)  # 购买用户ID
+    item_id = Column(Integer, ForeignKey('Item.id', ondelete="RESTRICT"), nullable=False, primary_key=True)  # 本地路径
+    create_date = Column(DATETIME, default=datetime.now)
+
+    item = relationship("Item", foreign_keys=[item_id])
+
+
+# 用户仓库
+class Repository(db.Model):
+    __tablename__ = 'Repository'
+    id = Column(Integer, primary_key=True, autoincrement=True)  # 记录ID
+    user_id = Column(Integer, ForeignKey('User.id', ondelete="RESTRICT"), nullable=False)  # 购买用户ID
+    item_id = Column(Integer, ForeignKey('Item.id', ondelete="RESTRICT"), nullable=False)  # 本地路径
+    create_date = Column(DATETIME, default=datetime.now)
+
+    item = relationship("Item", foreign_keys=[item_id])

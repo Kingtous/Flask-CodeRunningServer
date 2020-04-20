@@ -43,3 +43,15 @@ def set_up_api(app):
     api.add_resource(SubmitComment, '/threads/comment/submit')
     api.add_resource(DeleteComment, '/threads/comment/del')
     api.add_resource(GetComment, '/threads/comment/get')
+
+    # 5: 商城
+    from api.mall.items import GetItems
+    api.add_resource(GetItems, '/mall/get_items')
+    from api.mall.cart import GetCart
+    api.add_resource(GetCart, '/mall/my_cart')
+    from api.mall.cart import AddCart
+    api.add_resource(AddCart, '/mall/cart/add')
+    from api.mall.cart import DelCart
+    api.add_resource(DelCart, '/mall/cart/del')
+    from api.mall.repository import GetRepositoryItems
+    api.add_resource(GetRepositoryItems, '/repository/get')

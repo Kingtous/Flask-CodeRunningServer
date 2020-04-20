@@ -24,9 +24,9 @@
 from flask import request, g
 from flask_restful import Resource, reqparse
 
-from common.constants.response_code import ResponseClass, ResponseCode
-from app_config import auth
+from app_config import auth, database
 from app_utils import AppUtils
+from common.constants.response_code import ResponseClass, ResponseCode
 
 
 class ThreadsHandler(Resource):
@@ -64,7 +64,8 @@ class ThreadsHandler(Resource):
         page_num = page_num - 1
         session = AppUtils.get_session()
         from app.database_models import Threads
-        threads = session.query(Threads).offset(page_num * self.page_num_per_request).limit(
+        threads = session.query(Threads).order_by(database.desc(Threads.id)).offset(
+            page_num * self.page_num_per_request).limit(
             self.page_num_per_request).all()
         threads = [tr.get_public_dict() for tr in threads]
         return ResponseClass.ok_with_data(threads)
