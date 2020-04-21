@@ -22,9 +22,51 @@ from flask_mail import Message
 from flask_restful import Resource
 
 import app_config as conf
-from common.constants.response_code import ResponseClass, ResponseCode
 from app.database_models import User
 from app_utils import AppUtils
+from common.constants.response_code import ResponseClass, ResponseCode
+
+
+class RegisterMail(Resource):
+
+    def post(self):
+        email = request.json.get("email", None)
+        if email is None:
+            return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
+        self.send_reset_password_mail(email)
+        return ResponseClass.ok()
+
+    def send_reset_password_mail(self, email: str) -> bool:
+        try:
+            code: str = conf.cache.get(email)
+            if code is None:
+                code = self.gen_number_codes()
+                while conf.cache.get(code) is not None:
+                    # 不能使用相同的code在缓存中
+                    code = self.gen_number_codes()
+            # 不发送重复验证码
+            conf.cache.add(email, code, timeout=600)
+            # 放入cache
+            conf.cache.add(code, email, timeout=600)
+            message = Message(
+                subject='《码上社区》注册邮件',
+                recipients=[email],
+                body='您的注册验证码为：' + code + '，请在10分钟内使用，感谢支持！'
+            )
+            conf.mail_manager.send(
+                message
+            )
+            return True
+        except Exception as e:
+            print(e)
+            return False
+
+    @staticmethod
+    def gen_number_codes() -> str:
+        code_str = ''
+        for i in range(6):
+            code_str += str(randrange(0, 10))
+        return code_str
 
 
 class MailHandler(Resource):
@@ -65,7 +107,7 @@ class MailHandler(Resource):
             message = Message(
                 subject='《码上社区》重置密码邮件',
                 recipients=[user.mail],
-                body='用户' + user.username + '，您的重置验证码为：' + code + '，请在10分钟内使用，感谢支持！'
+                body='用户' + user.username + '，您的验证码为：' + code + '，请在10分钟内使用，感谢支持！'
             )
             conf.mail_manager.send(
                 message

@@ -13,9 +13,9 @@ from flask import request, jsonify, g
 from flask_restful import Resource
 
 import app_utils
-from common.constants.response_code import ResponseCode, ResponseClass
 from app.database_models import User
 from app_config import auth, cache
+from common.constants.response_code import ResponseCode, ResponseClass
 
 
 class Login(Resource):
@@ -48,10 +48,17 @@ class Register(Resource):
     def post(self):
         username = request.json.get('username', None)
         password = request.json.get('password', None)
+        code = request.json.get('code', None)
         mail = request.json.get('mail', None)
-        if username is None or password is None or mail is None or not re.match(
+        if username is None or password is None or code is None or mail is None or not re.match(
                 r'[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+', mail):
             return jsonify(code=ResponseCode.FORMAT_ERROR, msg="用户名密码格式错误")
+        cache_email = cache.get(code)
+        if cache_email != mail:
+            return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
+        else:
+            cache.delete(code)
+            cache.delete(mail)
         session = app_utils.AppUtils.get_session()
         try:
             # 验证用户名

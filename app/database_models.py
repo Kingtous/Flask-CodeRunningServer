@@ -22,9 +22,6 @@ auth = HTTPBasicAuth()
 expiration = 3600
 s = Serializer(Cf.secret_key, expires_in=expiration)
 
-USER_ROLE_USER = 0
-USER_ROLE_ADMIN = 1
-
 
 # 用户表
 class User(db.Model):
@@ -39,9 +36,8 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     credits = Column(Integer, default=0)  # 积分
     likes = Column(Integer, default=0)  # 点赞数
-
     # TODO 职责
-    # role = Column(Integer, default=USER_ROLE_USER) # 职责
+    role = Column(Integer, default=Cf.USER_ROLE_USER)  # 职责
 
     @staticmethod
     def password_illigal(password):
@@ -199,7 +195,7 @@ class Threads(db.Model):
             print(e)
             return False
 
-    def submit_comment(self, comment):
+    def submit_comment(self, comment, session: Session):
         try:
             last_time_commented = Cf.cache.get("comment_" + str(comment.user_id))
             if last_time_commented is not None:
@@ -208,10 +204,8 @@ class Threads(db.Model):
             if self.comment_id is None:
                 # 对首
                 comment.threads_id = self.id
-                session = AppUtils.add_to_sql(comment)
+                session.add(comment)
                 self.comment_id = comment.id
-                session.commit()
-                session.close()
             else:
                 session = AppUtils.get_session()
                 # 不是队列首部
@@ -219,10 +213,6 @@ class Threads(db.Model):
                 comment.parent_id = last_comment.id
                 session.add(comment)
                 last_comment.next_id = comment.id
-                user = session.query(User).filter_by(id=self.user_id).first()
-                user.credits += 10
-                session.commit()
-                session.close()
             return True
         except Exception as e:
             print(e)
@@ -264,7 +254,8 @@ class Threads(db.Model):
         else:
             d['code_url'] = ''
         d['user_id'] = self.user_id
-        d['username'] = session.query(User).filter_by(id=self.user_id).first().username
+        user = session.query(User).filter_by(id=self.user_id).first()
+        d['username'] = user.nickname + '(' + user.username + ')'
         session.close()
         return d
 
@@ -303,31 +294,31 @@ class Comments(db.Model):
             d['code_url'] = code.get_download_url()
         else:
             d['code_url'] = ''
-        d['username'] = session.query(User).filter_by(id=self.user_id).first().username
+        user = session.query(User).filter_by(id=self.user_id).first()
+        d['username'] = user.nickname + '(' + user.username + ')'
         session.close()
         return d
 
 
-#
-# # 代码分享表
-# class CodeSharing(db.Model):
-#     __tablename__ = 'CodeSharing'
-#     id = Column(Integer, primary_key=True, autoincrement=True)  # 分享的ID
-#     user_id = Column(Integer, ForeignKey('User.id'), nullable=False)  # 分享人
-#     code_id = Column(Integer, ForeignKey('Code.id', ondelete="CASCADE"), nullable=False)  # 本地路径
-#     like_nums = Column(Integer, default=0)  # 喜欢数
-#     dislike_nums = Column(Integer, default=0)  # 不喜欢数
-#     is_private = Column(BOOLEAN, default=True)  # 是否为私有
-#     credits = Column(Integer)  # 售价，以积分
-#
-#
-# # 代码购买表
-# # 需要先增加一条Code记录，再添加新加入代码的code_id
-# class CodeBought(db.Model):
-#     __tablename__ = 'CodeBought'
-#     id = Column(Integer, primary_key=True, autoincrement=True)  # 购买ID
-#     user_id = Column(Integer, ForeignKey('User.id', ondelete="CASCADE"), nullable=False)  # 购买用户ID
-#     code_id = Column(Integer, ForeignKey('Code.id', ondelete="CASCADE"), nullable=False)  # 本地路径
+# 代码分享表
+class CodeSharing(db.Model):
+    __tablename__ = 'CodeSharing'
+    id = Column(Integer, primary_key=True, autoincrement=True)  # 分享的ID
+    user_id = Column(Integer, ForeignKey('User.id'), nullable=False)  # 分享人
+    code_id = Column(Integer, ForeignKey('Code.id', ondelete="CASCADE"), nullable=False)  # 本地路径
+    like_nums = Column(Integer, default=0)  # 喜欢数
+    dislike_nums = Column(Integer, default=0)  # 不喜欢数
+    is_private = Column(BOOLEAN, default=True)  # 是否为私有
+    credits = Column(Integer)  # 售价，以积分
+
+
+# 代码购买表
+# 需要先增加一条Code记录，再添加新加入代码的code_id
+class CodeBought(db.Model):
+    __tablename__ = 'CodeBought'
+    id = Column(Integer, primary_key=True, autoincrement=True)  # 购买ID
+    user_id = Column(Integer, ForeignKey('User.id', ondelete="CASCADE"), nullable=False)  # 购买用户ID
+    code_id = Column(Integer, ForeignKey('Code.id', ondelete="CASCADE"), nullable=False)  # 本地路径
 
 
 # 签到表
@@ -345,14 +336,17 @@ class Item(db.Model):
     detail = Column(String(1024))  # 商品详情
     credits = Column(Integer)  # 需要点数
     isOn = Column(Boolean, default=True)  # 是否上架
+    img = Column(String(255),
+                 default="https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=3954745134,"
+                         "1665351706&fm=26&gp=0.jpg")  # 图片url
 
 
 # 购物车
 class Cart(db.Model):
     __tablename__ = 'Cart'
     id = Column(Integer, primary_key=True, autoincrement=True)  # 购买ID
-    user_id = Column(Integer, ForeignKey('User.id', ondelete="RESTRICT"), nullable=False, primary_key=True)  # 购买用户ID
-    item_id = Column(Integer, ForeignKey('Item.id', ondelete="RESTRICT"), nullable=False, primary_key=True)  # 本地路径
+    user_id = Column(Integer, ForeignKey('User.id', ondelete="CASCADE"), nullable=False, primary_key=True)  # 购买用户ID
+    item_id = Column(Integer, ForeignKey('Item.id', ondelete="CASCADE"), nullable=False, primary_key=True)  # 本地路径
     create_date = Column(DATETIME, default=datetime.now)
 
     item = relationship("Item", foreign_keys=[item_id])
@@ -362,8 +356,8 @@ class Cart(db.Model):
 class Repository(db.Model):
     __tablename__ = 'Repository'
     id = Column(Integer, primary_key=True, autoincrement=True)  # 记录ID
-    user_id = Column(Integer, ForeignKey('User.id', ondelete="RESTRICT"), nullable=False)  # 购买用户ID
-    item_id = Column(Integer, ForeignKey('Item.id', ondelete="RESTRICT"), nullable=False)  # 本地路径
+    user_id = Column(Integer, ForeignKey('User.id', ondelete="CASCADE"), nullable=False)  # 购买用户ID
+    item_id = Column(Integer, ForeignKey('Item.id', ondelete="CASCADE"), nullable=False)  # 本地路径
     create_date = Column(DATETIME, default=datetime.now)
 
     item = relationship("Item", foreign_keys=[item_id])

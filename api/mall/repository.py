@@ -36,6 +36,7 @@ class GetRepositoryItems(Resource):
             data = []
             for repository_item in repository_items:
                 item_data = AppUtils.serialize(repository_item.item)
+                item_data['repo_id'] = repository_item.id
                 data.append(item_data)
             return ResponseClass.ok_with_data(data)
         except Exception as e:

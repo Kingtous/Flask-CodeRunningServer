@@ -5,7 +5,7 @@
 @LastEditTime: 2020-04-20 17:56:23
 @Description: Kingtous' Code
 '''
-
+from flask import request, g
 from flask_restful import Resource, reqparse
 
 import app_config as conf
@@ -40,3 +40,25 @@ class GetItems(Resource):
             pass
         finally:
             session.close()
+
+
+class AddItems(Resource):
+
+    @conf.auth.login_required
+    def post(self):
+        if g.user.role == conf.USER_ROLE_USER:
+            return ResponseClass.warn(ResponseCode.NOT_ROOT)
+        else:
+            item = Item()
+            item.name = request.json.get('name')
+            item.detail = request.json.get('detail')
+            item.credits = request.json.get('credits')
+            item.isOn = request.json.get('isOn')
+            item.img = request.json.get('img')
+            session = AppUtils.get_session()
+            try:
+                session.add(item)
+                session.commit()
+                return ResponseClass.ok()
+            finally:
+                session.close()
