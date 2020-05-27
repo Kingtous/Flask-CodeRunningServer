@@ -106,21 +106,35 @@ class DeleteComment(Resource):
 
     @auth.login_required
     def post(self):
-        thread_id = request.json.get('thread_id', None)
-        comment_id = request.json.get('comment_id', None)
-        if comment_id is None or thread_id is None:
-            return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
-        session = AppUtils.get_session()
+        import app_config
         from app.database_models import Comments, Threads
-        c = session.query(Comments).filter_by(id=comment_id, user_id=g.user.id).first()
-        t = session.query(Threads).filter_by(id=thread_id).first()
-        if t is None or c is None:
-            session.close()
-            return ResponseClass.warn(ResponseCode.COMMENT_NOT_FOUND)
-        result = t.del_comment(comment_id)
-        if result:
-            session.close()
-            return ResponseClass.ok()
+        if g.user.role == app_config.USER_ROLE_ADMIN:
+            comment_id = request.json.get('comment_id', None)
+            if comment_id is None:
+                session = AppUtils.get_session()
+                try:
+                    comment = session.query(Comments).filter_by(id=comment_id).first()
+                    if comment is not None:
+                        session.delete(comment)
+                        session.commit()
+                    return ResponseClass.ok()
+                finally:
+                    session.close()
         else:
-            session.close()
-            return ResponseClass.warn(ResponseCode.SERVER_ERROR)
+            thread_id = request.json.get('thread_id', None)
+            comment_id = request.json.get('comment_id', None)
+            if comment_id is None or thread_id is None:
+                return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
+            session = AppUtils.get_session()
+            c = session.query(Comments).filter_by(id=comment_id, user_id=g.user.id).first()
+            t = session.query(Threads).filter_by(id=thread_id).first()
+            if t is None or c is None:
+                session.close()
+                return ResponseClass.warn(ResponseCode.COMMENT_NOT_FOUND)
+            result = t.del_comment(comment_id)
+            if result:
+                session.close()
+                return ResponseClass.ok()
+            else:
+                session.close()
+                return ResponseClass.warn(ResponseCode.SERVER_ERROR)

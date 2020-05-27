@@ -51,6 +51,8 @@ def set_up_api(app):
     api.add_resource(GetItems, '/mall/get_items')
     from api.mall.items import AddItems
     api.add_resource(AddItems, '/mall/add_items')
+    from api.mall.items import DeleteItems
+    api.add_resource(DeleteItems, '/mall/delete_items')
     from api.mall.cart import GetCart
     api.add_resource(GetCart, '/mall/my_cart')
     from api.mall.cart import AddCart

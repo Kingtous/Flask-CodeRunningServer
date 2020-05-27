@@ -54,7 +54,7 @@ class Register(Resource):
                 r'[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+', mail):
             return jsonify(code=ResponseCode.FORMAT_ERROR, msg="用户名密码格式错误")
         cache_email = cache.get(code)
-        if cache_email != mail:
+        if cache_email == mail:
             return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
         else:
             cache.delete(code)

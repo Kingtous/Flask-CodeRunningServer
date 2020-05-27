@@ -163,6 +163,9 @@ class Threads(db.Model):
     comment_id = Column(Integer, ForeignKey('Comments.id'), nullable=True)  # 发帖id
     title = Column(TINYTEXT)  # 帖子标题
     subtitle = Column(TEXT)  # 副标题，可能作为正文内容
+    create_date = Column(DATETIME, default=datetime.now)
+
+    user: User = relationship("User", foreign_keys=[user_id])
 
     @staticmethod
     def verify_title(title):
@@ -242,10 +245,14 @@ class Threads(db.Model):
 
     def get_public_dict(self):
         d = dict()
+        d['create_date'] = self.create_date
         d['id'] = self.id
         d['title'] = self.title
         d['subtitle'] = self.subtitle
         d['comment_id'] = self.comment_id
+        d['username'] = self.user.nickname + '(' + self.user.username + ')'
+        d['avatar'] = self.user.avatar_url
+        d['user_like'] = self.user.likes
         from app_utils import AppUtils
         session = AppUtils.get_session()
         code = session.query(Code).filter_by(id=self.code_id).first()
@@ -254,9 +261,6 @@ class Threads(db.Model):
         else:
             d['code_url'] = ''
         d['user_id'] = self.user_id
-        user = session.query(User).filter_by(id=self.user_id).first()
-        d['username'] = user.nickname + '(' + user.username + ')'
-        session.close()
         return d
 
 
@@ -274,6 +278,7 @@ class Comments(db.Model):
     # datetime.now指的是插入数据的当前时间，datetime.now()指的是建表时间
     create_date = Column(DATETIME, default=datetime.now)
 
+    user: User = relationship('User', foreign_keys=[user_id])
     parent = relationship('Comments', foreign_keys=[parent_id])
     next = relationship('Comments', foreign_keys=[next_id])
     thread = relationship('Threads', foreign_keys=[threads_id])
@@ -294,9 +299,8 @@ class Comments(db.Model):
             d['code_url'] = code.get_download_url()
         else:
             d['code_url'] = ''
-        user = session.query(User).filter_by(id=self.user_id).first()
-        d['username'] = user.nickname + '(' + user.username + ')'
-        session.close()
+        d['username'] = self.user.nickname + '(' + self.user.username + ')'
+        d['avatar'] = self.user.avatar_url
         return d
 
 

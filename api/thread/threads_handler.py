@@ -63,12 +63,15 @@ class ThreadsHandler(Resource):
         # 将page_num-1，适应计算
         page_num = page_num - 1
         session = AppUtils.get_session()
-        from app.database_models import Threads
-        threads = session.query(Threads).order_by(database.desc(Threads.id)).offset(
-            page_num * self.page_num_per_request).limit(
-            self.page_num_per_request).all()
-        threads = [tr.get_public_dict() for tr in threads]
-        return ResponseClass.ok_with_data(threads)
+        try:
+            from app.database_models import Threads
+            threads = session.query(Threads).order_by(database.desc(Threads.id)).offset(
+                page_num * self.page_num_per_request).limit(
+                self.page_num_per_request).all()
+            threads = [tr.get_public_dict() for tr in threads]
+            return ResponseClass.ok_with_data(threads)
+        finally:
+            session.close()
 
 
 # 获取用户自身的帖子
@@ -101,11 +104,25 @@ class DeleteThread(Resource):
 
     @auth.login_required
     def post(self):
-        t_id = request.json.get('thread_id', None)
-        session = AppUtils.get_session()
+        from app_config import USER_ROLE_ADMIN
         from app.database_models import Threads
-        th = session.query(Threads).filter_by(user_id=g.user.id, id=t_id).first()
-        if th is None:
-            return ResponseClass.warn(ResponseCode.THREAD_NOT_EXIST)
-        AppUtils.delete_to_sql(th).close()
-        return ResponseClass.ok()
+        if g.user.role == USER_ROLE_ADMIN:
+            # 系统删帖
+            t_id = request.json.get('thread_id', None)
+            session = AppUtils.get_session()
+            try:
+                th = session.query(Threads).filter_by(id=t_id).first()
+                if th is None:
+                    return ResponseClass.warn(ResponseCode.THREAD_NOT_EXIST)
+                session.delete(th)
+                return ResponseClass.ok()
+            finally:
+                session.close()
+        else:
+            t_id = request.json.get('thread_id', None)
+            session = AppUtils.get_session()
+            th = session.query(Threads).filter_by(user_id=g.user.id, id=t_id).first()
+            if th is None:
+                return ResponseClass.warn(ResponseCode.THREAD_NOT_EXIST)
+            AppUtils.delete_to_sql(th).close()
+            return ResponseClass.ok()
