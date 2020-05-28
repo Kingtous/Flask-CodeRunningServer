@@ -9,6 +9,8 @@ from flask import jsonify
 
 class ResponseCode:
     # 正常返回
+    NOT_ROOT = 1015  # 无权限
+    NO_ENOUGH_CREDITS = 1014  # 没有足够的积分
     OPERATION_TOO_FAST = 1013  # 操作太快
     ITEM_NOT_FOUND = 1012  # 购物车物品不存在
     SERVER_FORBIDDEN = 1011  # 服务器拒绝

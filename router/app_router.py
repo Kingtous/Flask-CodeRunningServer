@@ -15,6 +15,8 @@ def set_up_api(app):
     # 1: 用户登录注册资料点赞
     api.add_resource(Login, '/auth/login')  # 登录
     api.add_resource(Register, '/auth/register')  # 注册
+    from api.mail.mail_handler import RegisterMail
+    api.add_resource(RegisterMail, '/auth/sendRegisterMail')  # 发送注册验证码
     api.add_resource(GetToken, '/auth/getToken')  # 获取新的token
     api.add_resource(UserSignIn, '/user/signIn')  # 签到
     api.add_resource(GetCredits, '/user/myCredits')  # 查询自己的点数
@@ -47,11 +49,17 @@ def set_up_api(app):
     # 5: 商城
     from api.mall.items import GetItems
     api.add_resource(GetItems, '/mall/get_items')
+    from api.mall.items import AddItems
+    api.add_resource(AddItems, '/mall/add_items')
+    from api.mall.items import DeleteItems
+    api.add_resource(DeleteItems, '/mall/delete_items')
     from api.mall.cart import GetCart
     api.add_resource(GetCart, '/mall/my_cart')
     from api.mall.cart import AddCart
     api.add_resource(AddCart, '/mall/cart/add')
     from api.mall.cart import DelCart
     api.add_resource(DelCart, '/mall/cart/del')
+    from api.mall.cart import BuyCarts
+    api.add_resource(BuyCarts, '/mall/cart/buy')
     from api.mall.repository import GetRepositoryItems
     api.add_resource(GetRepositoryItems, '/repository/get')

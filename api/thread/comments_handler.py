@@ -25,6 +25,7 @@ from flask import request, g
 from flask_restful import Resource, reqparse
 from sqlalchemy import desc
 
+from app.database_models import User
 from app_config import auth
 # id = Column(Integer, primary_key=True, autoincrement=True)  # 评论ID
 # user_id = Column(Integer, ForeignKey('User.id'), nullable=False)
@@ -49,21 +50,27 @@ class SubmitComment(Resource):
         if t_id is None or content is None:
             return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
         session = AppUtils.get_session()
-        from app.database_models import Threads
-        thread = session.query(Threads).filter_by(id=t_id).first()
-        if thread is None:
-            return ResponseClass.warn(ResponseCode.THREAD_NOT_EXIST)
-        from app.database_models import Comments
-        new_comment = Comments()
-        new_comment.code_id = c_id
-        new_comment.user_id = g.user.id
-        new_comment.threads_id = t_id
-        new_comment.content = content
-        result = thread.submit_comment(new_comment)
-        if result:
-            return ResponseClass.ok()
-        else:
-            return ResponseClass.warn(ResponseCode.OPERATION_TOO_FAST)
+        try:
+            from app.database_models import Threads
+            thread = session.query(Threads).filter_by(id=t_id).first()
+            if thread is None:
+                return ResponseClass.warn(ResponseCode.THREAD_NOT_EXIST)
+            from app.database_models import Comments
+            new_comment = Comments()
+            new_comment.code_id = c_id
+            new_comment.user_id = g.user.id
+            new_comment.threads_id = t_id
+            new_comment.content = content
+            result = thread.submit_comment(new_comment, session)
+            if result:
+                user = session.query(User).filter_by(id=g.user.id).first()
+                user.credits += 1
+                session.commit()
+                return ResponseClass.ok()
+            else:
+                return ResponseClass.warn(ResponseCode.OPERATION_TOO_FAST)
+        finally:
+            session.close()
 
 
 class GetComment(Resource):
@@ -99,21 +106,35 @@ class DeleteComment(Resource):
 
     @auth.login_required
     def post(self):
-        thread_id = request.json.get('thread_id', None)
-        comment_id = request.json.get('comment_id', None)
-        if comment_id is None or thread_id is None:
-            return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
-        session = AppUtils.get_session()
+        import app_config
         from app.database_models import Comments, Threads
-        c = session.query(Comments).filter_by(id=comment_id, user_id=g.user.id).first()
-        t = session.query(Threads).filter_by(id=thread_id).first()
-        if t is None or c is None:
-            session.close()
-            return ResponseClass.warn(ResponseCode.COMMENT_NOT_FOUND)
-        result = t.del_comment(comment_id)
-        if result:
-            session.close()
-            return ResponseClass.ok()
+        if g.user.role == app_config.USER_ROLE_ADMIN:
+            comment_id = request.json.get('comment_id', None)
+            if comment_id is None:
+                session = AppUtils.get_session()
+                try:
+                    comment = session.query(Comments).filter_by(id=comment_id).first()
+                    if comment is not None:
+                        session.delete(comment)
+                        session.commit()
+                    return ResponseClass.ok()
+                finally:
+                    session.close()
         else:
-            session.close()
-            return ResponseClass.warn(ResponseCode.SERVER_ERROR)
+            thread_id = request.json.get('thread_id', None)
+            comment_id = request.json.get('comment_id', None)
+            if comment_id is None or thread_id is None:
+                return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
+            session = AppUtils.get_session()
+            c = session.query(Comments).filter_by(id=comment_id, user_id=g.user.id).first()
+            t = session.query(Threads).filter_by(id=thread_id).first()
+            if t is None or c is None:
+                session.close()
+                return ResponseClass.warn(ResponseCode.COMMENT_NOT_FOUND)
+            result = t.del_comment(comment_id)
+            if result:
+                session.close()
+                return ResponseClass.ok()
+            else:
+                session.close()
+                return ResponseClass.warn(ResponseCode.SERVER_ERROR)

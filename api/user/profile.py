@@ -17,15 +17,21 @@ class AlterProfile(Resource):
         field = request.json.get("field", None)
         value = request.json.get("value", None)
         if field is not None and value is not None:
-            user = g.user
-            if field == "nickname":
-                user.nickname = value
-                AppUtils.update_sql(user).close()
-                return ResponseClass.ok()
-            elif field == "avatar_url":
-                user.avatar_url = value
-                AppUtils.update_sql(user).close()
-                return ResponseClass.ok()
+            user = g.user  # 需要重新查找，这个User未绑定sql，无法更新
+            session = AppUtils.get_session()
+            user = session.query(User).filter_by(id=user.id).first()
+            try:
+                if field == "nickname":
+                    user.nickname = value
+                    session.commit()
+                    return ResponseClass.ok()
+                elif field == "avatar_url":
+                    user.avatar_url = value
+                    session.commit()
+                    return ResponseClass.ok()
+            finally:
+                session.close()
+
         return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
 
 

@@ -5,7 +5,7 @@
 @LastEditTime: 2020-04-20 17:56:23
 @Description: Kingtous' Code
 '''
-
+from flask import request, g
 from flask_restful import Resource, reqparse
 
 import app_config as conf
@@ -40,3 +40,52 @@ class GetItems(Resource):
             pass
         finally:
             session.close()
+
+
+# 添加/修改Items
+# 传入id表示修改
+class AddItems(Resource):
+
+    @conf.auth.login_required
+    def post(self):
+        if g.user.role == conf.USER_ROLE_USER:
+            return ResponseClass.warn(ResponseCode.NOT_ROOT)
+        else:
+            session = AppUtils.get_session()
+            id = request.json.get('id', None)
+            item: Item
+            if id is not None:
+                # 修改items
+                item = session.query(Item).filter_by(id=id).first()
+            else:
+                item = Item()
+            item.name = request.json.get('name')
+            item.detail = request.json.get('detail')
+            item.credits = request.json.get('credits')
+            item.isOn = request.json.get('isOn')
+            item.img = request.json.get('img')
+            if id is not None:
+                session.add(item)
+            try:
+                session.commit()
+                return ResponseClass.ok()
+            finally:
+                session.close()
+
+
+class DeleteItems(Resource):
+
+    @conf.auth.login_required
+    def post(self):
+        if g.user.role == conf.USER_ROLE_USER:
+            return ResponseClass.warn(ResponseCode.NOT_ROOT)
+        else:
+            session = AppUtils.get_session()
+            try:
+                item = session.query(Item).filter_by(id=request.json.get("id")).first()
+                if item is not None:
+                    session.delete(item)
+                    session.commit()
+                    return ResponseClass.ok()
+            finally:
+                session.close()

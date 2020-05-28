@@ -44,3 +44,6 @@ MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
 MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
 # 缓存
 cache: Cache = Union[None, Cache]
+# 用户role
+USER_ROLE_USER = 0
+USER_ROLE_ADMIN = 1

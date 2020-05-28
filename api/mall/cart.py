@@ -17,7 +17,7 @@ from flask import g, request
 from flask_restful import Resource, reqparse
 
 import app_config as conf
-from app.database_models import Cart
+from app.database_models import Cart, Repository, User
 from app_utils import AppUtils
 from common.constants.response_code import ResponseClass, ResponseCode
 
@@ -37,12 +37,14 @@ class GetCart(Resource):
             return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
         session = AppUtils.get_session()
         try:
-            cart_items = session.query(Cart).filter_by(user_id=g.user.id).order_by(Cart.create_date).offset(
+            cart_items = session.query(Cart).filter_by(user_id=g.user.id).order_by(
+                conf.database.desc(Cart.create_date)).offset(
                 page * 10).limit(
                 10).all()
             data = []
             for cart_item in cart_items:
                 item_data = AppUtils.serialize(cart_item.item)
+                item_data['cart_item_id'] = cart_item.id
                 data.append(item_data)
             return ResponseClass.ok_with_data(data)
         except Exception as e:
@@ -81,12 +83,49 @@ class DelCart(Resource):
             return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
         session = AppUtils.get_session()
         try:
-            item = session.query(Cart).filter_by(user_id=g.user.id, item_id=cart_id).first()
+            item = session.query(Cart).filter_by(user_id=g.user.id, id=cart_id).first()
             if item is None:
                 return ResponseClass.warn(ResponseCode.ITEM_NOT_FOUND)
             session.delete(item)
             session.commit()
             return ResponseClass.ok()
+        except Exception as e:
+            pass
+        finally:
+            session.close()
+
+
+class BuyCarts(Resource):
+
+    @conf.auth.login_required
+    def post(self):
+        ids = request.json.get("ids", [])
+        if len(ids) == 0:
+            return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
+        session = AppUtils.get_session()
+        total_credits = g.user.credits
+        try:
+            need_paid = 0
+            cart_item = []
+            for id in ids:
+                item = session.query(Cart).filter_by(id=id).first()
+                if item is not None:
+                    need_paid += item.item.credits
+                    cart_item.append(item)
+            if need_paid > total_credits:
+                return ResponseClass.warn(ResponseCode.NO_ENOUGH_CREDITS)
+            else:
+                # cart_id -> repository
+                user = session.query(User).filter_by(id=g.user.id).first()
+                user.credits -= need_paid
+                for cart in cart_item:
+                    repo = Repository()
+                    repo.user_id = g.user.id
+                    repo.item_id = cart.item_id
+                    session.add(repo)
+                    session.delete(cart)
+                session.commit()
+                return ResponseClass.ok_with_data(user.credits)
         except Exception as e:
             pass
         finally:
