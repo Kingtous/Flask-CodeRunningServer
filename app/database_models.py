@@ -52,11 +52,12 @@ class User(db.Model):
 
     def get_self_data(self):
         return {"id": self.id, "username": self.username, "token": self.generate_auth_token(), "credits": self.credits,
-                "avatar_url": self.avatar_url, "nickname": self.nickname}
+                "avatar_url": self.avatar_url, "nickname": self.nickname, "role": self.role}
 
     # 用于其他访问的数据
     def get_minimal_data(self):
-        return {"id": self.id, "username": self.username, "avatar_url": self.avatar_url, "nickname": self.nickname}
+        return {"id": self.id, "username": self.username, "avatar_url": self.avatar_url, "nickname": self.nickname,
+                "role": self.role}
 
     @staticmethod
     @Cf.auth.verify_password
