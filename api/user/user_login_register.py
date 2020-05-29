@@ -14,7 +14,7 @@ from flask_restful import Resource
 
 import app_utils
 from app.database_models import User
-from app_config import auth, cache
+from app_config import auth, cache, USER_ROLE_ADMIN, USER_ROLE_USER
 from common.constants.response_code import ResponseCode, ResponseClass
 
 
@@ -55,7 +55,9 @@ class Register(Resource):
             return jsonify(code=ResponseCode.FORMAT_ERROR, msg="用户名密码格式错误")
         cache_email = cache.get(code)
         if cache_email == mail:
-            return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
+            pass
+            # TODO 部署时取消注释
+            # return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
         else:
             cache.delete(code)
             cache.delete(mail)
@@ -149,5 +151,75 @@ class UserResetPassword(Resource):
                 cache.delete(code)
                 cache.delete(user_id)
                 return ResponseClass.ok_with_data(user.get_self_data())
+            finally:
+                session.close()
+
+
+# 获取用户列表
+class GetUserList(Resource):
+
+    @auth.login_required
+    def get(self):
+        # 普通用户无权限
+        if g.user.role == USER_ROLE_USER:
+            return ResponseClass.warn(ResponseCode.NOT_ROOT)
+        else:
+            session = app_utils.AppUtils.get_session()
+            try:
+                users = session.query(User).all()
+                data = [user.get_minimal_data() for user in users]
+                return ResponseClass.ok_with_data(data)
+            finally:
+                session.close()
+
+
+# 停用用户
+class ChangeUserStatus(Resource):
+
+    @auth.login_required
+    def post(self):
+        if g.user.role == USER_ROLE_USER:
+            return ResponseClass.warn(ResponseCode.NOT_ROOT)
+        else:
+            id = request.json.get("id", None)
+            if id is None:
+                return ResponseClass.warn(ResponseCode.USER_NOT_EXIST)
+            session = app_utils.AppUtils.get_session()
+            try:
+                user = session.query(User).filter_by(id=int(id)).first()
+                if user is None:
+                    return ResponseClass.warn(ResponseCode.USER_NOT_EXIST)
+
+                user.enable = not user.enable
+                session.commit()
+                return ResponseClass.ok_with_data(user.enable)
+            finally:
+                session.close()
+
+
+# 更改用户Role
+class ChangeUserRole(Resource):
+
+    @auth.login_required
+    def post(self):
+        if g.user.role == USER_ROLE_USER:
+            return ResponseClass.warn(ResponseCode.NOT_ROOT)
+        else:
+            id = request.json.get("id", None)
+            if id is None:
+                return ResponseClass.warn(ResponseCode.USER_NOT_EXIST)
+            if int(id) == g.user.id:
+                return ResponseClass.warn(ResponseCode.IS_SELF)
+            session = app_utils.AppUtils.get_session()
+            try:
+                user = session.query(User).filter_by(id=int(id)).first()
+                if user is None:
+                    return ResponseClass.warn(ResponseCode.USER_NOT_EXIST)
+                if user.role == USER_ROLE_USER:
+                    user.role = USER_ROLE_ADMIN
+                else:
+                    user.role = USER_ROLE_USER
+                session.commit()
+                return ResponseClass.ok_with_data(user.role)
             finally:
                 session.close()

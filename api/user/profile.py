@@ -81,8 +81,8 @@ class UserLikeApi(Resource):
                     session.add(likes)
                     return ResponseClass.ok()
                 else:
-                    # TODO 测试并发量
-                    q_user.likes += 1
+                    q_user.likes -= 1
+                    session.delete(result)
                     return ResponseClass.warn(ResponseCode.ALREADY_LIKED)
         finally:
             session.commit()

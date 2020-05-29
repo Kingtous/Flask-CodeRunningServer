@@ -10,7 +10,7 @@ def set_up_api(app):
     from api.user.profile import AlterProfile, UserStatistic, UserLikeApi
     from api.user.user_login_register import Login, Register, GetToken, UserSignIn, GetCredits
     from api.mail.mail_handler import MailHandler
-    from api.user.user_login_register import UserResetPassword
+    from api.user.user_login_register import UserResetPassword, ChangeUserRole, ChangeUserStatus, GetUserList
     api = Api(app)
     # 1: 用户登录注册资料点赞
     api.add_resource(Login, '/auth/login')  # 登录
@@ -25,6 +25,9 @@ def set_up_api(app):
     api.add_resource(UserLikeApi, '/user/profile/like/<user_id>')  # 点赞
     api.add_resource(MailHandler, '/auth/mail/reset_password')  # 发送重置邮件
     api.add_resource(UserResetPassword, '/auth/profile/reset_password')  # 重置密码接口
+    api.add_resource(ChangeUserRole, '/user/change_role')
+    api.add_resource(ChangeUserStatus, '/user/change_status')
+    api.add_resource(GetUserList, '/user/list')
 
     # 2: 上传文件
     api.add_resource(UploadTokenAPI, '/file/getUploadToken')  # 获取上传token使用的是七牛云
@@ -51,8 +54,8 @@ def set_up_api(app):
     api.add_resource(GetItems, '/mall/get_items')
     from api.mall.items import AddItems
     api.add_resource(AddItems, '/mall/add_items')
-    from api.mall.items import DeleteItems
-    api.add_resource(DeleteItems, '/mall/delete_items')
+    from api.mall.items import ChangeItemStatus
+    api.add_resource(ChangeItemStatus, '/mall/change_items')
     from api.mall.cart import GetCart
     api.add_resource(GetCart, '/mall/my_cart')
     from api.mall.cart import AddCart

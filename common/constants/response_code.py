@@ -9,6 +9,7 @@ from flask import jsonify
 
 class ResponseCode:
     # 正常返回
+    IS_SELF = 1016  # 自己无法对自己做操作
     NOT_ROOT = 1015  # 无权限
     NO_ENOUGH_CREDITS = 1014  # 没有足够的积分
     OPERATION_TOO_FAST = 1013  # 操作太快

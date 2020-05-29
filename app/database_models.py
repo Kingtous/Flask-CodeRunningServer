@@ -38,6 +38,7 @@ class User(db.Model):
     likes = Column(Integer, default=0)  # 点赞数
     # TODO 职责
     role = Column(Integer, default=Cf.USER_ROLE_USER)  # 职责
+    enable = Column(Boolean, default=True)
 
     @staticmethod
     def password_illigal(password):
@@ -57,7 +58,7 @@ class User(db.Model):
     # 用于其他访问的数据
     def get_minimal_data(self):
         return {"id": self.id, "username": self.username, "avatar_url": self.avatar_url, "nickname": self.nickname,
-                "role": self.role}
+                "role": self.role, "enable": self.enable}
 
     @staticmethod
     @Cf.auth.verify_password
