@@ -78,7 +78,7 @@ class UserLikeApi(Resource):
                     session.add(likes)
                 else:
                     q_user.likes -= 1
-                    session.delete(q_user)
+                    session.delete(result)
                 session.commit()
                 return ResponseClass.ok_with_data(q_user.likes)
         finally:
