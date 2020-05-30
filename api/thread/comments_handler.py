@@ -110,7 +110,7 @@ class DeleteComment(Resource):
         from app.database_models import Comments, Threads
         if g.user.role == app_config.USER_ROLE_ADMIN:
             comment_id = request.json.get('comment_id', None)
-            if comment_id is None:
+            if comment_id is not None:
                 session = AppUtils.get_session()
                 try:
                     comment = session.query(Comments).filter_by(id=comment_id).first()

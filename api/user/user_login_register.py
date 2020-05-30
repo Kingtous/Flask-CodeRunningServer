@@ -55,9 +55,8 @@ class Register(Resource):
             return jsonify(code=ResponseCode.FORMAT_ERROR, msg="用户名密码格式错误")
         cache_email = cache.get(code)
         if cache_email == mail:
-            pass
-            # TODO 部署时取消注释
-            # return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
+            # 部署时取消注释
+            return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
         else:
             cache.delete(code)
             cache.delete(mail)

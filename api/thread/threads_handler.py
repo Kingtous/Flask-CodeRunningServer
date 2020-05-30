@@ -115,6 +115,7 @@ class DeleteThread(Resource):
                 if th is None:
                     return ResponseClass.warn(ResponseCode.THREAD_NOT_EXIST)
                 session.delete(th)
+                session.commit()
                 return ResponseClass.ok()
             finally:
                 session.close()

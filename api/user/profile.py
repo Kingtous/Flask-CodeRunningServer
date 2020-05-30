@@ -1,5 +1,3 @@
-import time
-
 from flask import request, g
 from flask_restful import Resource
 
@@ -60,7 +58,6 @@ class UserLikeApi(Resource):
 
     @auth.login_required
     def get(self, user_id):
-        t1 = time.clock()
         session = AppUtils.get_session()
         try:
             from app.database_models import User
@@ -79,12 +76,9 @@ class UserLikeApi(Resource):
                     likes.user_id = g.user.id
                     likes.like_user = user_id
                     session.add(likes)
-                    return ResponseClass.ok()
                 else:
                     q_user.likes -= 1
-                    session.delete(result)
-                    return ResponseClass.warn(ResponseCode.ALREADY_LIKED)
+                session.commit()
+                return ResponseClass.ok_with_data(q_user.likes)
         finally:
-            session.commit()
-            print("请求时间：%f" % (time.clock() - t1))
             session.close()

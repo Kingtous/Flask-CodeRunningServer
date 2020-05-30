@@ -65,8 +65,18 @@ class AppUtils:
         # 启动代码运行服务
         Cf.code_manager = CodeManager()
         # 启动缓存
-        # TODO simple只是用dict保存，后期使用redis替换
-        Cf.cache = Cache(flask_app, config={'CACHE_TYPE': 'simple'})
+        # 使用redis替换
+        Cf.cache = Cache(flask_app, config={
+            'CACHE_TYPE': os.environ.get("CACHE_TYPE"),
+            'CACHE_REDIS_HOST': os.environ.get("CACHE_REDIS_HOST"),
+            'CACHE_REDIS_PORT': os.environ.get("CACHE_REDIS_PORT"),
+            'CACHE_REDIS_DB': os.environ.get("CACHE_REDIS_DB"),
+            'CACHE_REDIS_PASSWORD': os.environ.get("CACHE_REDIS_PASSWORD")
+        })
+        print("testing cache engine...", end='')
+        Cf.cache.add("init", True)
+        Cf.cache.delete("init")
+        print("OK")
         # 初始化完成，回调
         AppUtils.on_init_success(flask_app)
 

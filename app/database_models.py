@@ -36,13 +36,11 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     credits = Column(Integer, default=0)  # 积分
     likes = Column(Integer, default=0)  # 点赞数
-    # TODO 职责
     role = Column(Integer, default=Cf.USER_ROLE_USER)  # 职责
     enable = Column(Boolean, default=True)
 
     @staticmethod
     def password_illigal(password):
-        # TODO
         return True
 
     def hash_password(self, password):
