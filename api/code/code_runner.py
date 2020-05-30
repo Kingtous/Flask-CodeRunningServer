@@ -27,10 +27,10 @@
 from flask import request, g
 from flask_restful import Resource, reqparse
 
-from common.constants.response_code import ResponseClass, ResponseCode
 from app.code_manager import CodeBlock
 from app_config import auth
 from app_utils import AppUtils
+from common.constants.response_code import ResponseClass, ResponseCode
 
 
 class CodeRunnerSubmitAPI(Resource):
@@ -80,7 +80,7 @@ class CodeRunningQueryAPI(Resource):
             session = SQLSession()
             try:
                 from app.database_models import CodeResult
-                result = session.query(CodeResult).filter_by(user_id=user_id, id=code_id).first()
+                result = session.query(CodeResult).filter_by(user_id=user_id, code_id=code_id).first()
                 if result is None:
                     return ResponseClass.warn(ResponseCode.FILE_NOT_EXIST)
                 return ResponseClass.ok_with_data({"status": result.status, "result": result.result})

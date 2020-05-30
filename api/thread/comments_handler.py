@@ -64,7 +64,7 @@ class SubmitComment(Resource):
             result = thread.submit_comment(new_comment, session)
             if result:
                 user = session.query(User).filter_by(id=g.user.id).first()
-                user.credits += 1
+                user.credits += 5
                 session.commit()
                 return ResponseClass.ok()
             else:
