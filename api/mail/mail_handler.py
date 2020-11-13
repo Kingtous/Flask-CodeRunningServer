@@ -51,13 +51,13 @@ class RegisterMail(Resource):
             message = Message(
                 subject='《码上社区》注册邮件',
                 recipients=[email],
-                body='您的注册验证码为：' + code + '，请在10分钟内使用，感谢支持！'
+                body='您的注册验证码为：' + str(code) + '，请在10分钟内使用，感谢支持！'
             )
             conf.mail_manager.send(
                 message
             )
             return True
-        except Exception as e:
+        except AssertionError as e:
             print(e)
             return False
 
@@ -72,14 +72,14 @@ class RegisterMail(Resource):
 class MailHandler(Resource):
 
     def post(self):
-        username = request.json.get("username", None)
-        if username is None:
+        name = request.json.get("username", None)
+        if name is None:
             return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
         session = AppUtils.get_session()
         try:
-            user: User = session.query(User).filter_by(username=username).first()
+            user = session.query(User).filter_by(username=name).first()
             if user is None:
-                user = session.query(User).filter_by(mail=username).first()
+                user = session.query(User).filter_by(mail=name).first()
             if user is None:
                 return ResponseClass.warn(ResponseCode.USER_NOT_EXIST)
             else:
@@ -94,26 +94,26 @@ class MailHandler(Resource):
 
     def send_reset_password_mail(self, user: User) -> bool:
         try:
-            code: str = conf.cache.get(user.id)
+            code : str= conf.cache.get(user.mail)
             if code is None:
                 code = self.gen_number_codes()
                 while conf.cache.get(code) is not None:
                     # 不能使用相同的code在缓存中
                     code = self.gen_number_codes()
             # 不发送重复验证码
-            conf.cache.add(user.id, code, timeout=600)
+            conf.cache.add(user.mail, code, timeout=600)
             # 放入cache
-            conf.cache.add(code, user.id, timeout=600)
+            conf.cache.add(code, user.mail, timeout=600)
             message = Message(
                 subject='《码上社区》重置密码邮件',
                 recipients=[user.mail],
-                body='用户' + user.username + '，您的验证码为：' + code + '，请在10分钟内使用，感谢支持！'
+                body='用户' + str(user.username) + '，您的验证码为：' + str(code) + '，请在10分钟内使用，感谢支持！'
             )
             conf.mail_manager.send(
                 message
             )
             return True
-        except Exception as e:
+        except AssertionError as e:
             print(e)
             return False
 

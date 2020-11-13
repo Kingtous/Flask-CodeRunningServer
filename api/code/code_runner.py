@@ -39,7 +39,7 @@ class CodeRunnerSubmitAPI(Resource):
     def post(self):
         url = request.json.get("url", None)
         url = AppUtils.get_local_path(url)
-
+        print("url:",url)
         session = AppUtils.get_session()
         from app.database_models import Code
         code = session.query(Code).filter_by(local_path=url).first()
@@ -57,7 +57,7 @@ class CodeRunnerSubmitAPI(Resource):
         session.close()
         return_value = code_manager.add_task(block)
         if return_value:
-            return ResponseClass.ok_with_data({"code_id": code_result.id})
+            return ResponseClass.ok_with_data({"code_id": code_result.code_id})
         else:
             return ResponseClass.warn(ResponseCode.SUBMIT_ERROR)
 

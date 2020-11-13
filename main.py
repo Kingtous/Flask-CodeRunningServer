@@ -45,10 +45,10 @@ def start_server():
     server = pywsgi.WSGIServer(('0.0.0.0', 5000), dapp)
     server.serve_forever()
     # 运行 flask
-    # app.run(host="0.0.0.0",
+    #app.run(host="0.0.0.0",
     #         port=5000,
     #         debug=True,
-    #         use_reloader=False
+    #        use_reloader=False
     #         )
 
 

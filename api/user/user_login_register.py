@@ -54,7 +54,7 @@ class Register(Resource):
                 r'[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+', mail):
             return jsonify(code=ResponseCode.FORMAT_ERROR, msg="用户名密码格式错误")
         cache_email = cache.get(code)
-        if cache_email == mail:
+        if cache_email != mail:
             # 部署时取消注释
             return ResponseClass.warn(ResponseCode.FORMAT_ERROR)
         else:
@@ -142,7 +142,7 @@ class UserResetPassword(Resource):
                 return ResponseClass.warn(ResponseCode.SERVER_FORBIDDEN)
             session = app_utils.AppUtils.get_session()
             try:
-                user = session.query(User).filter_by(id=user_id).first()
+                user = session.query(User).filter_by(mail=user_id).first()
                 if user is None:
                     return ResponseClass.warn(ResponseCode.USER_NOT_EXIST)
                 user.hash_password(new_password)
